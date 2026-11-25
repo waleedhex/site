@@ -23,6 +23,60 @@ function imageUrl(value) {
   }
 }
 
+const contentToken = /\[([^\[\]\n]+)\]\(([^\s()]+)\)|\*\*([^\n]+?)\*\*|\[color=(red|blue|green|purple)\]([^\n]+?)\[\/color\]/g;
+
+function safeLink(value) {
+  try {
+    if (!/^(https?:\/\/[^\s]+|\/(?![\/\\])[^\s]*)$/i.test(value)) return '';
+    const url = new URL(value, origin);
+    if (!['https:', 'http:'].includes(url.protocol)) return '';
+    return value.startsWith('/') && url.origin !== origin ? '' : url.href;
+  } catch {
+    return '';
+  }
+}
+
+function inlineContent(text, plain = false, depth = 0) {
+  if (depth >= 8) return plain ? text : escape(text);
+  let output = '';
+  let offset = 0;
+  for (const token of text.matchAll(contentToken)) {
+    const before = text.slice(offset, token.index);
+    output += plain ? before : escape(before);
+    const [source, label, destination, bold, color, colored] = token;
+    if (label) {
+      const href = safeLink(destination);
+      output += plain ? label : href ? `<a href="${escape(href)}">${escape(label)}</a>` : escape(source);
+    } else {
+      const inner = inlineContent(bold ?? colored, plain, depth + 1);
+      output += plain ? inner : bold ? `<strong>${inner}</strong>` : `<span class="text-${color}">${inner}</span>`;
+    }
+    offset = token.index + source.length;
+  }
+  const remainder = text.slice(offset);
+  return output + (plain ? remainder : escape(remainder));
+}
+
+function articleBody(body) {
+  const blocks = [];
+  let paragraph = [];
+  const flush = () => {
+    if (paragraph.length) blocks.push(`<p>${paragraph.map(line => inlineContent(line)).join('\n')}</p>`);
+    paragraph = [];
+  };
+  for (const line of body.split(/\r?\n/)) {
+    const heading = /^(#{2,3}) +(.+)$/.exec(line);
+    if (heading) {
+      flush();
+      const level = heading[1].length;
+      blocks.push(`<h${level}>${inlineContent(heading[2])}</h${level}>`);
+    } else if (line.trim()) paragraph.push(line);
+    else flush();
+  }
+  flush();
+  return blocks.join('');
+}
+
 function layout({ title, description = '', path, image = '', indexable = true, body, nav = [] }) {
   const canonical = path ? origin + path : '';
   const shareImage = imageUrl(image);
@@ -39,6 +93,8 @@ ${shareImage ? `<meta property="og:image" content="${escape(shareImage)}">` : ''
   header{border-bottom:1px solid #e0d9e0} footer{border-top:1px solid #e0d9e0}
   header a{font-weight:700} a{color:#694066;text-underline-offset:.18em}
   h1{line-height:1.25;overflow-wrap:anywhere} article{min-height:40vh}
+  article h2,article h3{line-height:1.4;overflow-wrap:anywhere}
+  .text-red{color:#a72032}.text-blue{color:#1e51a4}.text-green{color:#18623b}.text-purple{color:#6d3990}
   article p{white-space:pre-wrap;overflow-wrap:anywhere} nav{display:flex;gap:1rem;flex-wrap:wrap}
 </style></head><body><header><a href="/">${siteName}</a></header>
 <main>${body}</main><footer><nav aria-label="روابط الموقع"><a href="/">الرئيسية</a><a href="/blog">المدونة</a>
@@ -102,10 +158,10 @@ module.exports = async function handler(req, res) {
       readPages({ select: '*', slug: 'eq.' + slug, kind: 'eq.' + route, limit: '1' }), footer()
     ]);
     if (!page) return notFound();
-    const paragraphs = page.body.split(/\r?\n\s*\r?\n/).filter(Boolean).map(paragraph => `<p>${escape(paragraph)}</p>`).join('');
+    const paragraphs = articleBody(page.body);
     return html(200, {
       title: page.seo_title || page.title + ' | ' + siteName,
-      description: page.description || page.body.replace(/\s+/g, ' ').trim().slice(0, 160),
+      description: page.description || inlineContent(page.body.replace(/^#{2,3} +/gm, ''), true).replace(/\s+/g, ' ').trim().slice(0, 160),
       path: pagePath(page), image: page.image, indexable: page.indexable, nav,
       body: `<article><h1>${escape(page.title)}</h1>${paragraphs}</article>`
     });
