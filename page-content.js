@@ -3,8 +3,8 @@
 
   const prefix = 'rich:v1:';
   const colors = { red: '#a72032', blue: '#1e51a4', green: '#18623b', purple: '#6d3990' };
-  const tags = new Set(['b','strong','i','em','u','h2','h3','p','br','ul','ol','li','div','span','a']);
-  const blocks = new Set(['h2','h3','p','br','ul','ol','li','div']);
+  const tags = new Set(['b','strong','i','em','u','h2','h3','p','br','ul','ol','li','div','span','a','blockquote','s','sub','sup']);
+  const blocks = new Set(['h2','h3','p','br','ul','ol','li','div','blockquote']);
 
   function escape(value = '') {
     return String(value).replace(/[&<>"']/g, character =>
@@ -66,9 +66,26 @@
   }
 
   function safeStyle(value) {
-    return typeof value === 'string' ? value.split(';').map(rule => rule.trim()).filter(rule =>
-      /^(color|background-color|font-size|text-align|font-weight|font-style|text-decoration)\s*:\s*[#a-z0-9(),.%\s-]+$/i.test(rule)
-    ).join(';') : '';
+    if (typeof value !== 'string') return '';
+    return value.split(';').map(rule => rule.trim()).filter(rule =>
+      /^(color|background-color|font-size|text-align|font-weight|font-style|text-decoration(?:-line)?|white-space|list-style-type|margin-inline-start|padding-inline-start)\s*:\s*[#a-z0-9(),.%\s-]+$/i.test(rule) ||
+      /^font-family\s*:\s*[\p{L}\d\s,'"-]+$/iu.test(rule)
+    ).join(';');
+  }
+
+  function clipboardStyle(node) {
+    const rules = [node.getAttribute('style') || ''];
+    const align = node.getAttribute('align');
+    if (/^(left|center|right|justify)$/i.test(align || '')) rules.push('text-align:' + align);
+    if (node.localName === 'font') {
+      const color = node.getAttribute('color');
+      const face = node.getAttribute('face');
+      const size = node.getAttribute('size');
+      if (color) rules.push('color:' + color);
+      if (face) rules.push('font-family:' + face);
+      if (/^[1-7]$/.test(size || '')) rules.push('font-size:' + [10,13,16,18,24,32,48][Number(size)-1] + 'px');
+    }
+    return safeStyle(rules.join(';'));
   }
 
   function renderNodes(nodes, plain, depth = 0) {
@@ -104,17 +121,21 @@
       return Array.from(parent.childNodes).flatMap(node => {
         if (node.nodeType === 3) return [node.textContent];
         if (node.nodeType !== 1) return [];
-        const tag = node.localName;
-        if (['script', 'style', 'template', 'iframe', 'object'].includes(tag)) return [];
+        const sourceTag = node.localName;
+        if (['script', 'style', 'template', 'iframe', 'object', 'svg', 'math'].includes(sourceTag)) return [];
+        const tag = /^h[4-6]$/.test(sourceTag) ? 'h3' :
+          ({ h1:'h2', font:'span', center:'div', strike:'s' })[sourceTag] || sourceTag;
         const contents = children(node, depth + 1);
         if (!tags.has(tag)) return contents;
-        return [[tag, safeStyle(node.getAttribute('style')), tag === 'a' ? safeLink(node.getAttribute('href') || '') : '', contents]];
+        const style = clipboardStyle(node);
+        return [[tag, (sourceTag === 'center' ? 'text-align:center;' : '') + style,
+          tag === 'a' ? safeLink(node.getAttribute('href') || '') : '', contents]];
       });
     }
     return prefix + JSON.stringify(children(container));
   }
 
-  const content = { render, encode };
+  const content = { render, encode, safeStyle };
   if (typeof module === 'object' && module.exports) module.exports = content;
   else root.sitePageContent = content;
 })(globalThis);
