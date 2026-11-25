@@ -56,6 +56,7 @@
     return declarations.length ? ':root:root:root{' + declarations.join(';') + '}' : '';
   }
 
+  themeCss.foreground = foreground;
   if (typeof module === 'object' && module.exports) module.exports = themeCss;
   else root.siteThemeCss = themeCss;
 })(globalThis);
