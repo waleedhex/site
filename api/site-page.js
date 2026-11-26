@@ -1,6 +1,6 @@
 const { readFile } = require('node:fs/promises');
 const path = require('node:path');
-const { seoDescription, siteMetadata } = require('../seo-phrases');
+const { siteMetadata, pageMetadata } = require('../seo-phrases');
 const { render: renderContent } = require('../page-content');
 const themeCss = require('../site-theme');
 const origin = new URL(process.env.SITE_ORIGIN || 'https://hexgames.vercel.app').origin;
@@ -183,8 +183,7 @@ module.exports = async function handler(req, res) {
     if (!page) return notFound(settings);
     const paragraphs = renderContent(page.body);
     return html(200, {
-      title: page.seo_title || page.title + ' | ' + siteName,
-      description: page.description || seoDescription('', renderContent(page.body, true)),
+      ...pageMetadata(page, settings, renderContent),
       path: pagePath(page), image: page.image, indexable: page.indexable, nav, settings,
       body: `<article><h1>${escape(page.title)}</h1>${paragraphs}</article>`
     });
