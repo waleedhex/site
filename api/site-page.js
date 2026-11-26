@@ -1,3 +1,6 @@
+const { readFile } = require('node:fs/promises');
+const path = require('node:path');
+const { seoDescription, appDescription } = require('../seo-phrases');
 const { render: renderContent } = require('../page-content');
 const themeCss = require('../site-theme');
 const origin = new URL(process.env.SITE_ORIGIN || 'https://hexgames.vercel.app').origin;
@@ -66,13 +69,65 @@ async function readTable(table, filters) {
 }
 
 const readPages = filters => readTable('site_pages_published', filters);
+async function readSite() {
+  const [row] = await readTable('site_content', { select: 'data', id: 'eq.1' });
+  const data = row?.data;
+  if (!Array.isArray(data?.a) || !data.s || !data.t) throw new Error('Site content unavailable');
+  return data;
+}
+
 async function readTheme() {
   try {
-    const [row] = await readTable('site_content', { select: 'data', id: 'eq.1' });
-    return row?.data?.s || {};
+    return (await readSite()).s;
   } catch {
     return {};
   }
+}
+
+function visibleApps(data) {
+  return data.a.filter(app => !app.hd && typeof app.slug === 'string' && slugPattern.test(app.slug));
+}
+
+function appPath(app) {
+  return '/apps/' + encodeURIComponent(app.slug);
+}
+
+function appProse(app, field) {
+  const value = app[field + 'Rich'];
+  if (typeof value === 'string') return renderContent(value);
+  const text = String(app[field] || '');
+  if (field === 'feat') {
+    const items = text.split(/\r?\n/).map(item => item.trim()).filter(Boolean);
+    return items.length ? '<ul>' + items.map(item => `<li>${escape(item)}</li>`).join('') + '</ul>' : '';
+  }
+  return text.split(/\r?\n\s*\r?\n/).filter(Boolean).map(paragraph => `<p>${escape(paragraph)}</p>`).join('');
+}
+
+let template;
+async function siteHtml(data, app) {
+  template ||= await readFile(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const name = String(data.s.name || siteName);
+  const title = app ? app.name + ' | ' + name : name;
+  const description = app
+    ? appDescription(app, renderContent)
+    : seoDescription('', visibleApps(data).map(item => item.sub).filter(Boolean).join('\n'));
+  const url = origin + (app ? appPath(app) : '/');
+  const appList = visibleApps(data).map(item =>
+    `<li><a href="${appPath(item)}">${escape(item.name)}</a><p>${escape(item.sub || '')}</p></li>`).join('');
+  const header = `<header class="top"><div class="w"><a class="logo" href="/">${escape(name)}</a></div></header>`;
+  const overview = app && !app.x3 && !app.h1 ? appProse(app, 'desc') + appProse(app, 'feat') : '';
+  const body = app
+    ? `<article class="ds"><h1>${escape(app.name)}</h1><p>${escape(app.sub || '')}</p>${overview}</article>`
+    : `<h1>${escape(name)}</h1><ul>${appList}</ul><a href="/blog">المدونة</a>`;
+  const metadata = `<link rel="canonical" href="${escape(url)}"><meta property="og:url" content="${escape(url)}"><meta property="og:title" content="${escape(title)}"><meta property="og:description" content="${escape(description)}">`;
+  const safeData = JSON.stringify({ ...data, a: data.a.filter(item => !item.hd) }).replace(/</g, '\\u003c');
+  return template
+    .replace(/<title>[^<]*<\/title>/, () => `<title>${escape(title)}</title>`)
+    .replace(/<meta name="description" content="[^"]*">/, () => `<meta name="description" content="${escape(description)}">${metadata}`)
+    .replace('<div id="app"></div>', () => `<div id="app" data-rendered="true">${header}<main class="w">${body}</main></div>`)
+    .replace(/(<script id="data" type="application\/json">)[\s\S]*?(<\/script>)/, (_, open, close) => open + safeData + close)
+    .replace(/src="\.\/(site-theme|page-content|seo-phrases)\.js"/g, 'src="/$1.js"')
+    .replace('</head>', () => `<style>${themeCss(data.s)}</style></head>`);
 }
 
 function send(res, status, type, body) {
@@ -98,11 +153,19 @@ module.exports = async function handler(req, res) {
       return send(res, 200, 'text/plain', `User-agent: *\nAllow: /\nSitemap: ${origin}/sitemap.xml\n`);
     }
     if (route === 'sitemap') {
-      const pages = await readPages({ select: 'slug,kind,updated_at', indexable: 'eq.true' });
+      const [data, pages] = await Promise.all([readSite(), readPages({ select: 'slug,kind,updated_at', indexable: 'eq.true' })]);
       const entries = [{ path: '/' }, { path: '/blog' },
+        ...visibleApps(data).map(app => ({ path: appPath(app) })),
         ...pages.map(page => ({ path: pagePath(page), updated: page.updated_at }))];
       const urls = entries.map(({ path, updated }) => `<url><loc>${escape(origin + path)}</loc>${updated ? `<lastmod>${escape(updated)}</lastmod>` : ''}</url>`).join('');
       return send(res, 200, 'application/xml', `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`);
+    }
+
+    if (route === 'home' || route === 'app') {
+      const data = await readSite();
+      const app = route === 'app' && visibleApps(data).find(item => item.slug === slug);
+      if (route === 'app' && !app) return notFound(data.s);
+      return send(res, 200, 'text/html', await siteHtml(data, app));
     }
 
     const footer = () => readPages({ select: 'slug,kind,title', footer: 'eq.true', order: 'title.asc' }).catch(() => []);
@@ -124,7 +187,7 @@ module.exports = async function handler(req, res) {
     const paragraphs = renderContent(page.body);
     return html(200, {
       title: page.seo_title || page.title + ' | ' + siteName,
-      description: page.description || renderContent(page.body, true).replace(/\s+/g, ' ').trim().slice(0, 160),
+      description: page.description || seoDescription('', renderContent(page.body, true)),
       path: pagePath(page), image: page.image, indexable: page.indexable, nav, settings,
       body: `<article><h1>${escape(page.title)}</h1>${paragraphs}</article>`
     });
