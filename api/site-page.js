@@ -1,6 +1,6 @@
 const { readFile } = require('node:fs/promises');
 const path = require('node:path');
-const { seoDescription, appDescription } = require('../seo-phrases');
+const { seoDescription, siteMetadata } = require('../seo-phrases');
 const { render: renderContent } = require('../page-content');
 const themeCss = require('../site-theme');
 const origin = new URL(process.env.SITE_ORIGIN || 'https://hexgames.vercel.app').origin;
@@ -107,10 +107,7 @@ let template;
 async function siteHtml(data, app) {
   template ||= await readFile(path.join(__dirname, '..', 'index.html'), 'utf8');
   const name = String(data.s.name || siteName);
-  const title = app ? app.name + ' | ' + name : name;
-  const description = app
-    ? appDescription(app, renderContent)
-    : seoDescription('', visibleApps(data).map(item => item.sub).filter(Boolean).join('\n'));
+  const { title, description } = siteMetadata(data, app, renderContent);
   const url = origin + (app ? appPath(app) : '/');
   const appList = visibleApps(data).map(item =>
     `<li><a href="${appPath(item)}">${escape(item.name)}</a><p>${escape(item.sub || '')}</p></li>`).join('');
