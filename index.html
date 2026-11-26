@@ -496,9 +496,7 @@ function navigateSite(href){
  route();
 }
 function siteMetadata(app){
- const title=app?app.name+" | "+D.s.name:D.s.name;
- const description=app?siteSeo.appDescription(app,sitePageContent.render):
-  siteSeo.seoDescription("",D.a.filter(item=>!item.hd).map(item=>item.sub).filter(Boolean).join("\n"));
+ const {title,description}=siteSeo.siteMetadata(D,app,sitePageContent.render);
  document.title=title;
  const canonical=document.querySelector('link[rel="canonical"]');
  if(!canonical)return;
@@ -539,9 +537,11 @@ function route(keep){
 /* ---------- admin ---------- */
 var TK=[["today","عنوان الصفحة الرئيسية"],["week","عنوان قسم تطبيقات الأسبوع"],["feat","عنوان قائمة التطبيقات"],["all","تبويب «الكل»"],["search","نص حقل البحث"],["ad","النص الصغير في اللافتات"],["go","زر اللافتات"],["none","رسالة عدم وجود نتائج"],["home","زر الرئيسية"],["back","رابط الرجوع"],["t1","تبويب نظرة عامة"],["t2","تبويب المزيد"],["rate","عنوان التقييم"],["cat","عنوان الفئة"],["age","عنوان العمر"],["shots","عنوان لقطات الشاشة"],["about","عنوان عن التطبيق"],["like","عنوان قد يعجبك أيضًا"],["info","عنوان المعلومات"],["ratings","عنوان التقييمات"],["news","عنوان ما الجديد"],["faq","عنوان الأسئلة الشائعة"],["priv","عنوان الخصوصية"],["dev","المطوّر"],["ver","الإصدار"],["size","الحجم"],["upd","آخر تحديث"],["langs","اللغات"],["compat","التوافق"],["price","السعر"],["admin","زر دخول المدير"]];
 var ST=[["k","النوع","select",[["apple","App Store"],["play","Google Play"],["web","رابط آخر"]]],["n","اسم الزر (للرابط الآخر)"],["u","الرابط"]],TB=[["n","اسم التبويب"],["img","صورة أعلى التبويب","img"]],CF=[["n","اسم الفئة"],["h","إخفاء من التبويبات","check"]];
-var FS=[["name","اسم الموقع"],["footer","نص أسفل الصفحة"],["c1","اللون الرئيسي (الأزرار والتبويبات)","color"],["c2","لون الخلفية","color"],["c3","لون النص","color"],["c4","لون العناصر الثانوية","color"],["headerColor","خلفية الشريط العلوي","color"],["footerColor","خلفية الفوتر","color"],["cardColor","خلفية البطاقات","color"],["mutedColor","لون النص الثانوي","color"],["linkColor","لون الروابط","color"],["buttonTextColor","لون نص الأزرار الرئيسية","color"],["borderColor","لون الحدود والفواصل","color"],["starColor","لون نجوم التقييم","color"],["storeColor","خلفية أزرار المتاجر","color"],["bannerShadeColor","لون تظليل البنرات","color"],["bannerTextColor","لون نص البنرات","color"],["weekGlowColor","لون توهج تطبيقات الأسبوع","color"],["logo","شعار المتجر","img"],["lh","حجم الشعار في الأعلى","range",[28,96]],["sn","إظهار اسم الموقع بجانب الشعار","check"],["date","إظهار التاريخ","check"],["sb","إظهار اللافتات","check"],["sw","إظهار تطبيقات الأسبوع","check"],["sf","إظهار البحث والفئات","check"],["sl","إظهار قائمة التطبيقات","check"],["sr","إظهار التقييم في كل الموقع","check"],["fz","حجم الخط الأساسي","range",[13,20]]];
+const SEO_FIELDS=[["seoTarget","عبارة البحث المستهدفة"],["seoTitle","عنوان البحث اليدوي (اختياري)"],
+ ["seoSummary","وصف البحث اليدوي (اختياري)","area"]];
+var FS=[["seo","سيو الرئيسية","group",SEO_FIELDS],["name","اسم الموقع"],["footer","نص أسفل الصفحة"],["c1","اللون الرئيسي (الأزرار والتبويبات)","color"],["c2","لون الخلفية","color"],["c3","لون النص","color"],["c4","لون العناصر الثانوية","color"],["headerColor","خلفية الشريط العلوي","color"],["footerColor","خلفية الفوتر","color"],["cardColor","خلفية البطاقات","color"],["mutedColor","لون النص الثانوي","color"],["linkColor","لون الروابط","color"],["buttonTextColor","لون نص الأزرار الرئيسية","color"],["borderColor","لون الحدود والفواصل","color"],["starColor","لون نجوم التقييم","color"],["storeColor","خلفية أزرار المتاجر","color"],["bannerShadeColor","لون تظليل البنرات","color"],["bannerTextColor","لون نص البنرات","color"],["weekGlowColor","لون توهج تطبيقات الأسبوع","color"],["logo","شعار المتجر","img"],["lh","حجم الشعار في الأعلى","range",[28,96]],["sn","إظهار اسم الموقع بجانب الشعار","check"],["date","إظهار التاريخ","check"],["sb","إظهار اللافتات","check"],["sw","إظهار تطبيقات الأسبوع","check"],["sf","إظهار البحث والفئات","check"],["sl","إظهار قائمة التطبيقات","check"],["sr","إظهار التقييم في كل الموقع","check"],["fz","حجم الخط الأساسي","range",[13,20]]];
 var FB=[["t","العنوان"],["s","النص الصغير"],["b","نص الزر"],["l","رابط الزر"],["img","صورة اللافتة","img"],["c1","لون الخلفية الأول","color"],["c2","لون الخلفية الثاني","color"],["e","إيموجي (عند عدم وجود صورة)"]];
-var FA=[["name","اسم التطبيق"],["sub","وصف قصير"],["cat","الفئة"],["rating","التقييم","number"],["emoji","إيموجي الأيقونة"],["hue","درجة لون الأيقونة","range"],["img","صورة الأيقونة","img"],["downloads","أزرار التحميل","group",[
+var FA=[["name","اسم التطبيق"],["sub","وصف قصير"],["seo","سيو التطبيق","group",SEO_FIELDS],["cat","الفئة"],["rating","التقييم","number"],["emoji","إيموجي الأيقونة"],["hue","درجة لون الأيقونة","range"],["img","صورة الأيقونة","img"],["downloads","أزرار التحميل","group",[
  ["hideAppleDownload","إخفاء زر App Store","check"],
  ["hidePlayDownload","إخفاء زر Google Play","check"],
  ["showCustomDownload","إظهار زر تحميل مخصص","check"],
@@ -760,7 +760,7 @@ function seoAssistantPanel(){
    (sources.length>4?' وغير ذلك':'')+'</small></li>';
  }).join("");
  return '<section class="seo-assistant"><button type="button" data-refresh-seo'+(seoSources.loading?' disabled':'')+'>تحديث العبارات</button>'+
-  '<p class="hint">عبارات مقترحة من محتوى موقعك. يظهر مصدر كل عبارة بجانبها.</p>'+ 
+  '<p class="hint">هذه اقتراحات من محتوى الموقع. لتحديد ما يستهدفه عنوان البحث، افتح «سيو التطبيق» أو «سيو الرئيسية» واكتب عبارتك.</p>'+ 
   (status?'<p role="status">'+status+'</p>':'')+
   (rows?'<ol>'+rows+'</ol>':'<p>ما فيه محتوى كافٍ لاستخراج عبارات.</p>')+'</section>';
 }
