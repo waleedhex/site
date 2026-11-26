@@ -90,9 +90,14 @@ footer.ft{border-top:1px solid var(--border);padding:24px 0;text-align:center;fo
 .stats>div+div{border-right:1px solid var(--border)}
 .stats small{font-size:.75rem;color:var(--muted)}.stats b{display:flex;justify-content:center;align-items:center;gap:4px;font-size:1.25rem}
 .ds{padding:24px 0;border-bottom:1px solid var(--border)}.ds h2{margin:0 0 12px;font-size:1.25rem;font-weight:700}
-.shots{--shot-height:clamp(200px,68vw,340px);display:flex;align-items:flex-start;gap:12px;overflow-x:auto;padding-bottom:8px;scroll-snap-type:x proximity}
+.shots{direction:rtl;overflow-anchor:none;--shot-height:clamp(200px,68vw,340px);display:flex;align-items:flex-start;gap:12px;overflow-x:auto;padding-bottom:8px;scroll-snap-type:x proximity}
 .shot{flex:none;min-inline-size:0;max-inline-size:100%;margin:0;scroll-snap-align:start}
 .shot img{display:block;width:auto;max-inline-size:100%;height:var(--shot-height);object-fit:contain;border-radius:16px;background:var(--secondary)}
+.shot-zoom{display:block;max-inline-size:100%;margin:0;padding:0;border:0;border-radius:16px;background:none;cursor:zoom-in}
+.shot-viewer{position:fixed;inset:0;width:fit-content;height:fit-content;max-width:94vw;max-height:90vh;max-height:90dvh;margin:auto;padding:0;border:0;overflow:visible;background:transparent}
+.shot-viewer::backdrop{background:rgb(0 0 0/.82)}
+.shot-viewer img{display:block;max-width:94vw;max-height:90vh;max-height:90dvh;width:auto;height:auto;object-fit:contain;border-radius:12px}
+.shot-viewer button{position:absolute;top:8px;inset-inline-end:8px;width:44px;height:44px;border:1px solid rgb(255 255 255/.55);border-radius:50%;background:#181818;color:#fff;font-size:1.4rem;cursor:pointer}
 .shot-placeholder{display:grid;place-items:center;height:var(--shot-height);aspect-ratio:1/2;border-radius:16px;font-size:3rem}
 .ds ul{margin:12px 0 0;padding-right:20px;font-size:.875rem;line-height:1.7}
 .more{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}@media(min-width:768px){.more{grid-template-columns:repeat(4,1fr)}}
@@ -506,7 +511,7 @@ document.addEventListener("toggle",event=>{
 },true);
 function detail(a){
  var p="a."+D.a.indexOf(a),others=D.a.filter(function(x){return x.slug!==a.slug&&isV(x)}).slice(0,4);
- var shots=(a.shots&&a.shots.length)?a.shots.map(function(u,n){var q='data-p="'+p+'.shots" data-i="'+n+'"';return '<figure class="shot"><img src="'+E(u)+'" alt="لقطة شاشة '+(n+1)+' من '+E(a.name)+'" loading="lazy" decoding="async">'+(ADMIN?'<div class="mvb"><button data-act="up" '+q+' aria-label="تقديم لقطة الشاشة">→</button><button data-act="rm" '+q+'>🗑 حذف</button><button data-act="dn" '+q+' aria-label="تأخير لقطة الشاشة">←</button></div>':'')+'</figure>'}).join(""):[0,1,2,3].map(function(i){return '<div class="shot shot-placeholder" style="background:linear-gradient(160deg,oklch(.9 .06 '+((+a.hue)+i*20)+'),oklch(.7 .14 '+((+a.hue)+30+i*20)+'))">'+E(a.emoji)+'</div>'}).join("");
+ var shots=(a.shots&&a.shots.length)?a.shots.map(function(u,n){var q='data-p="'+p+'.shots" data-i="'+n+'"';return '<figure class="shot"><button type="button" class="shot-zoom" data-shot-zoom aria-label="تكبير لقطة الشاشة '+(n+1)+'"><img src="'+E(u)+'" alt="لقطة شاشة '+(n+1)+' من '+E(a.name)+'" loading="lazy" decoding="async"></button>'+(ADMIN?'<div class="mvb"><button data-act="up" '+q+' aria-label="تقديم لقطة الشاشة">→</button><button data-act="rm" '+q+'>🗑 حذف</button><button data-act="dn" '+q+' aria-label="تأخير لقطة الشاشة">←</button></div>':'')+'</figure>'}).join(""):[0,1,2,3].map(function(i){return '<div class="shot shot-placeholder" style="background:linear-gradient(160deg,oklch(.9 .06 '+((+a.hue)+i*20)+'),oklch(.7 .14 '+((+a.hue)+30+i*20)+'))">'+E(a.emoji)+'</div>'}).join("");
  return shell(a,"o",'<section class="stats" data-s="x1">'+(showR(a)?'<div>'+ed("t.rate","small")+'<b>'+ed(p+".rating","span")+STAR+'</b></div>':'')+'<div>'+ed("t.cat","small")+'<b>'+ed(p+".cat","span")+'</b></div><div>'+ed("t.age","small")+'<b>'+ed(p+".age","span")+'</b></div></section><section class="ds" data-s="x2">'+ed("t.shots","h2")+'<div class="shots" dir="rtl">'+shots+'</div>'+(ADMIN?'<p class="hint">'+((a.shots&&a.shots.length)?"استخدم الأزرار تحت كل لقطة للترتيب والحذف.":"هذه نماذج توضيحية وليست لقطات مرفوعة. ارفع لقطات التطبيق لتحلّ محلها، وبعد الرفع تظهر أزرار الترتيب تحت كل لقطة.")+'</p><button class="eb in" data-act="cam" data-p="'+p+'.shots">📷 إضافة لقطة شاشة</button>':'')+'</section><section class="ds" data-s="x3">'+ed("t.about","h2") +inlineAppContent(a,"desc","الوصف")+inlineAppContent(a,"feat","المميزات")+'</section><section class="ds" data-s="x4">'+ed("t.like","h2")+'<div class="more">'+others.map(function(o){return '<a href="'+appHref(o)+'">'+icon(o,"l")+'<b>'+E(o.name)+'</b><small>'+E(o.cat)+'</small></a>'}).join("")+'</div></section>')}
 function more(a){
  var p="a."+D.a.indexOf(a),info=["dev","ver","size","upd","langs","compat","price"].filter(function(k){return a[k]}).map(function(k){return '<div>'+ed("t."+k,"dt")+ed(p+"."+k,"dd")+'</div>'}).join("");
@@ -541,6 +546,37 @@ function siteMetadata(app){
   if(meta)meta.content=value;
  }
 }
+function startShotsOnRight(strip){
+ const first=strip?.querySelector(".shot");
+ if(!first)return;
+ const listeners=new AbortController();
+ const signal=listeners.signal;
+ let frame=0;
+ const align=()=>{
+  frame=0;
+  if(signal.aborted||!strip.isConnected)return;
+  const drift=first.getBoundingClientRect().right-strip.getBoundingClientRect().right;
+  if(Math.abs(drift)>1)strip.scrollTo({left:strip.scrollLeft+drift,behavior:"instant"});
+ };
+ const schedule=()=>{
+  if(!signal.aborted&&!frame)frame=requestAnimationFrame(align);
+ };
+ const resize=typeof ResizeObserver==="function"?new ResizeObserver(schedule):null;
+ resize?.observe(strip);
+ resize?.observe(first);
+ const stop=()=>{
+  listeners.abort();
+  resize?.disconnect();
+  cancelAnimationFrame(frame);
+ };
+ for(const event of ["pointerdown","touchstart","wheel","keydown"]){
+  strip.addEventListener(event,stop,{passive:true,signal});
+ }
+ strip.addEventListener("load",schedule,{capture:true,signal});
+ strip.scrollTo({left:0,behavior:"instant"});
+ schedule();
+ carouselCleanup.push(stop);
+}
 function route(keep){
  carouselCleanup.splice(0).forEach(cleanup=>cleanup());
  var h="";
@@ -552,7 +588,7 @@ function route(keep){
  const fragment=path?h:legacy?"":view[2]?.slice(1);
  const k=fragment==="more"?"m":/^t\d+$/.test(fragment||"")?Number(fragment.slice(1)):"o";
  const a=path?siteRoutes.resolveApp(D.a.filter(isV),slug):D.a.find(app=>app.slug===slug&&isV(app)),el=$("app");
- if(a){el.innerHTML=R(page(a,k));siteMetadata(a);scrollTo(0,keep?y:0);return}
+ if(a){el.innerHTML=R(page(a,k));startShotsOnRight(el.querySelector(".shots"));siteMetadata(a);scrollTo(0,keep?y:0);return}
  el.innerHTML=R(home());siteMetadata();
  if(showB())loop($("g1"),$("bn"),false);
  if(showW())loop($("g2"),$("wh"),true);
@@ -1502,6 +1538,34 @@ async function boot(){
 document.addEventListener("click",function(e){if(ADMIN)return;var f=e.target.closest&&e.target.closest('[data-e="s.footer"]');if(!f)return;var n=Date.now();TAPS=(n-TT<1500)?TAPS+1:1;TT=n;if(TAPS>=4){TAPS=0;gate()}});
 var fi=document.createElement("input");fi.type="file";fi.accept="image/*,.webp";fi.id="fi";fi.hidden=true;document.body.appendChild(fi);
 fi.addEventListener("change",function(){if(fi.files.length)upl(Array.from(fi.files),fi.dataset.u)});
+const shotViewer=document.createElement("dialog");
+shotViewer.className="shot-viewer";
+shotViewer.setAttribute("aria-label","لقطة الشاشة المكبّرة");
+shotViewer.innerHTML='<img alt=""><button type="button" data-shot-close aria-label="إغلاق الصورة" autofocus>×</button>';
+const enlargedShot=shotViewer.querySelector("img");
+function openShotViewer(source){
+ if(!source)return;
+ const url=source.currentSrc||source.getAttribute("src");
+ if(!url)return;
+ enlargedShot.alt=source.alt;
+ delete enlargedShot.dataset.imageRetried;
+ if(source.dataset.imageRef)enlargedShot.dataset.imageRef=source.dataset.imageRef;
+ else delete enlargedShot.dataset.imageRef;
+ enlargedShot.src=url;
+ if(!shotViewer.open)shotViewer.showModal();
+}
+document.addEventListener("click",event=>{
+ const trigger=event.target.closest?.("[data-shot-zoom]");
+ if(trigger)openShotViewer(trigger.querySelector("img"));
+});
+shotViewer.addEventListener("click",event=>{
+ if(event.target===shotViewer||event.target.closest?.("[data-shot-close]"))shotViewer.close();
+});
+shotViewer.addEventListener("close",()=>{
+ enlargedShot.removeAttribute("src");
+ delete enlargedShot.dataset.imageRef;
+});
+document.body.appendChild(shotViewer);
 const mediaDialog=document.createElement("dialog");
 mediaDialog.id="media-picker";
 mediaDialog.className="media-picker";
