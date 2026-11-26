@@ -25,15 +25,18 @@ function collectSeoPhrases(documents){
       const key=normalized.slice(start,start+length).join(" ");
       const label=words.slice(start,start+length).join(" ");
       const score=weight*(length===1?1:length===2?1.45:1.25);
-      if(score>(scores.get(key)?.score||0))scores.set(key,{label,score});
+      const previous=scores.get(key);
+      scores.set(key,{label:!previous||score>previous.score?label:previous.label,
+       score:Math.max(score,previous?.score||0),count:(previous?.count||0)+1});
      }
     });
    });
   });
-  scores.forEach(({label,score},key)=>{
-   const entry=entries.get(key)||{label,best:0,score:0,sources:new Map()};
+  scores.forEach(({label,score,count},key)=>{
+   const entry=entries.get(key)||{key,label,best:0,score:0,count:0,sources:new Map()};
    if(score>entry.best){entry.label=label;entry.best=score}
-   entry.score+=score;
+   entry.score+=score+Math.min(count-1,8)*.85;
+   entry.count+=count;
    entry.sources.set(index,title);
    entries.set(key,entry);
   });
@@ -49,13 +52,13 @@ function includesSeoPhrase(text,phrase){
  const term=words(phrase);
  return Boolean(term)&&(" "+words(text)+" ").includes(" "+term+" ");
 }
-function seoDescription(preferred, content, target=""){
+function seoDescription(preferred, content, target="", supporting=[], excluded=[]){
  const first=seoText(preferred).replace(/\s+/g," ").trim();
  const parts=seoText(content).split(/[\n.!؟!?]+/).map(part=>part.replace(/\s+/g," ").trim()).filter(Boolean);
  const phrases=collectSeoPhrases([{title:"",fields:[[preferred,4],[content,2]]}]);
  const scored=parts.map((part,index)=>{
   const text=seoWord(part);
-  const score=(includesSeoPhrase(part,target)?500:0)+phrases.slice(0,10).reduce((total,phrase,rank)=>total+(text.includes(seoWord(phrase.label))?10-rank:0),0);
+  const score=(includesSeoPhrase(part,target)?500:0)-excluded.reduce((total,phrase)=>total+(includesSeoPhrase(part,phrase)?80:0),0)+supporting.reduce((total,phrase)=>total+(includesSeoPhrase(part,phrase)?25:0),0)+phrases.slice(0,10).reduce((total,phrase,rank)=>total+(text.includes(seoWord(phrase.label))?10-rank:0),0);
   return {part,index,score};
  }).sort((a,b)=>b.score-a.score||a.index-b.index);
  const normalized=seoWord(first);
@@ -67,12 +70,12 @@ function seoDescription(preferred, content, target=""){
  const boundary=shortened.lastIndexOf(" ");
  return (boundary>110?shortened.slice(0,boundary):shortened)+"…";
 }
- function appDescription(app,render){
+ function appDescription(app,render,preferences){
   const contents=app.x3||app.h1?[]:["desc","feat"].map(field=>{
    const rich=app[field+"Rich"];
    return typeof rich==="string"?render(rich,true):app[field];
   });
-  return seoLine(app.seoSummary)||seoDescription(app.sub,contents.filter(Boolean).join("\n"),seoLine(app.seoTarget));
+  return seoLine(app.seoSummary)||seoDescription(app.sub,contents.filter(Boolean).join("\n"),seoLine(app.seoTarget),preferences.supporting||[],excludedTerms(preferences));
  }
  function siteMetadata(data,app,render){
   const brand=seoLine(data.s.name)||"واجهة التطبيقات";
@@ -81,11 +84,26 @@ function seoDescription(preferred, content, target=""){
   const target=seoLine(item.seoTarget).slice(0,100);
   const preferred=target&&!includesSeoPhrase(name,target)?name+" – "+target:name;
   const title=seoLine(item.seoTitle)||(app&&name!==brand?preferred+" | "+brand:preferred);
-  const description=app?appDescription(app,render):seoLine(item.seoSummary)||seoDescription("",
-   data.a.filter(app=>!app.hd).map(app=>app.sub).filter(Boolean).join("\n"),target);
+  const key=app?"app:"+app.slug:"home";
+  const preferences=data.s.seoPreferences?.[key]||{};
+  const description=app?appDescription(app,render,preferences):seoLine(item.seoSummary)||seoDescription("",
+   data.a.filter(app=>!app.hd).map(app=>app.sub).filter(Boolean).join("\n"),target,preferences.supporting||[],excludedTerms(preferences));
   return {title,description};
  }
- const seo={collectSeoPhrases,seoDescription,siteMetadata};
+ function excludedTerms(preferences){
+  return Object.entries(preferences.terms||{}).filter(([,term])=>term.excluded)
+   .flatMap(([key,term])=>[key,term.text].filter(Boolean));
+ }
+ function pageMetadata(page,settings,render){
+  const selected=settings.seoPreferences?.[page.kind+":"+page.slug]||{};
+  const name=seoLine(page.title);
+  const target=seoLine(selected.target);
+  const title=seoLine(page.seo_title)||(target&&!includesSeoPhrase(name,target)?name+" – "+target:name)+
+   " | "+(seoLine(settings.name)||"واجهة التطبيقات");
+  const description=seoLine(page.description)||seoDescription("",render(page.body,true),target,selected.supporting||[],excludedTerms(selected));
+  return {title,description};
+ }
+ const seo={collectSeoPhrases,seoDescription,siteMetadata,pageMetadata,includesSeoPhrase};
  if(typeof module==="object"&&module.exports)module.exports=seo;
  else root.siteSeo=seo;
 })(globalThis);
