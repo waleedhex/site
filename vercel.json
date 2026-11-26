@@ -3,6 +3,7 @@
   "rewrites": [
     { "source": "/", "destination": "/api/site-page?route=home" },
     { "source": "/apps/:slug", "destination": "/api/site-page?route=app&slug=:slug" },
+    { "source": "/media/:id/thumb", "destination": "/api/site-image?id=:id&variant=thumb" },
     { "source": "/media/:id", "destination": "/api/site-image?id=:id" },
     { "source": "/sitemap.xml", "destination": "/api/site-page?route=sitemap" },
     { "source": "/robots.txt", "destination": "/api/site-page?route=robots" },
