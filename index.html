@@ -90,8 +90,10 @@ footer.ft{border-top:1px solid var(--border);padding:24px 0;text-align:center;fo
 .stats>div+div{border-right:1px solid var(--border)}
 .stats small{font-size:.75rem;color:var(--muted)}.stats b{display:flex;justify-content:center;align-items:center;gap:4px;font-size:1.25rem}
 .ds{padding:24px 0;border-bottom:1px solid var(--border)}.ds h2{margin:0 0 12px;font-size:1.25rem;font-weight:700}
-.shots{display:flex;gap:16px;overflow-x:auto;padding-bottom:8px}
-.shots div{flex:none;width:160px;height:320px;border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:3rem}
+.shots{--shot-height:clamp(200px,68vw,340px);display:flex;align-items:flex-start;gap:12px;overflow-x:auto;padding-bottom:8px;scroll-snap-type:x proximity}
+.shot{flex:none;min-inline-size:0;max-inline-size:100%;margin:0;scroll-snap-align:start}
+.shot img{display:block;width:auto;max-inline-size:100%;height:var(--shot-height);object-fit:contain;border-radius:16px;background:var(--secondary)}
+.shot-placeholder{display:grid;place-items:center;height:var(--shot-height);aspect-ratio:1/2;border-radius:16px;font-size:3rem}
 .ds ul{margin:12px 0 0;padding-right:20px;font-size:.875rem;line-height:1.7}
 .more{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}@media(min-width:768px){.more{grid-template-columns:repeat(4,1fr)}}
 .more a{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;text-decoration:none}.more small{font-size:.75rem;color:var(--muted)}
@@ -113,7 +115,7 @@ main{padding-top:20px}h2.big{font-size:1.875rem;margin-bottom:14px}
 .cats{flex-wrap:nowrap;overflow-x:auto;margin-inline:-20px;padding-inline:20px;scrollbar-width:none}.cats::-webkit-scrollbar{display:none}.cat{flex:none;padding:9px 16px}
 .row{gap:12px}.row .sb{max-width:none}
 .dh{gap:16px}.dh .ic.xl{width:88px;height:88px;font-size:2.75rem}.dh h1{font-size:1.5rem}.dh>div{min-width:0}.dh .sb{max-width:none}
-.tabs a{flex:1;text-align:center}.shots div{width:140px;height:280px}.rate{gap:16px}.big5 b{font-size:2.5rem}
+.tabs a{flex:1;text-align:center}.rate{gap:16px}.big5 b{font-size:2.5rem}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
 
@@ -136,7 +138,7 @@ body.adm{padding-bottom:84px}
 .pn .add{width:100%;margin:8px 0;padding:12px;font-weight:600;background:var(--primary);color:var(--primary-fg)}
 .im{margin-top:10px;font-size:.8rem;color:var(--muted)}.im img{display:block;max-height:90px;margin:6px 0;border-radius:8px}.th{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}.th div{position:relative}.th img{height:80px;margin:0}.th button{position:absolute;top:2px;inset-inline-start:2px;padding:2px 7px}.th .tb{display:flex;gap:4px;justify-content:center;margin-top:4px}.th .tb button{position:static;padding:3px 10px}
 .hint{font-size:.85rem;color:var(--muted);margin:10px 0 0}
-.shots div{position:relative}.shots .mvb{position:absolute;bottom:8px;inset-inline:0;display:flex;gap:6px;justify-content:center}.shots .mvb button{border:0;border-radius:999px;background:#2457f5;color:#fff;padding:5px 12px;font-size:.85rem;cursor:pointer}
+.shots .mvb{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:8px}.shots .mvb button{border:0;border-radius:999px;background:#2457f5;color:#fff;padding:5px 12px;font-size:.85rem;cursor:pointer}
 .ts{position:fixed;inset-inline:16px;bottom:84px;z-index:70;background:#111;color:#fff;padding:10px 14px;border-radius:12px;font-size:.875rem;text-align:center}
 
 #adm{--bg:#fff;--card:#fff;--fg:#14161c;--secondary:#eef0f3;--border:#dde1e7;--muted:#6a707c;--primary:#14161c;--primary-fg:#fff;color:var(--fg);color-scheme:light}
@@ -490,7 +492,7 @@ document.addEventListener("toggle",event=>{
 },true);
 function detail(a){
  var p="a."+D.a.indexOf(a),others=D.a.filter(function(x){return x.slug!==a.slug&&isV(x)}).slice(0,4);
- var shots=(a.shots&&a.shots.length)?a.shots.map(function(u,n){var q='data-p="'+p+'.shots" data-i="'+n+'"';return '<div style="overflow:hidden"><img src="'+E(u)+'" alt="" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover">'+(ADMIN?'<span class="mvb"><button data-act="up" '+q+'>→</button><button data-act="rm" '+q+'>🗑 حذف</button><button data-act="dn" '+q+'>←</button></span>':'')+'</div>'}).join(""):[0,1,2,3].map(function(i){return '<div style="background:linear-gradient(160deg,oklch(.9 .06 '+((+a.hue)+i*20)+'),oklch(.7 .14 '+((+a.hue)+30+i*20)+'))">'+E(a.emoji)+'</div>'}).join("");
+ var shots=(a.shots&&a.shots.length)?a.shots.map(function(u,n){var q='data-p="'+p+'.shots" data-i="'+n+'"';return '<figure class="shot"><img src="'+E(u)+'" alt="لقطة شاشة '+(n+1)+' من '+E(a.name)+'" loading="lazy" decoding="async">'+(ADMIN?'<div class="mvb"><button data-act="up" '+q+' aria-label="تقديم لقطة الشاشة">→</button><button data-act="rm" '+q+'>🗑 حذف</button><button data-act="dn" '+q+' aria-label="تأخير لقطة الشاشة">←</button></div>':'')+'</figure>'}).join(""):[0,1,2,3].map(function(i){return '<div class="shot shot-placeholder" style="background:linear-gradient(160deg,oklch(.9 .06 '+((+a.hue)+i*20)+'),oklch(.7 .14 '+((+a.hue)+30+i*20)+'))">'+E(a.emoji)+'</div>'}).join("");
  return shell(a,"o",'<section class="stats" data-s="x1">'+(showR(a)?'<div>'+ed("t.rate","small")+'<b>'+ed(p+".rating","span")+STAR+'</b></div>':'')+'<div>'+ed("t.cat","small")+'<b>'+ed(p+".cat","span")+'</b></div><div>'+ed("t.age","small")+'<b>'+ed(p+".age","span")+'</b></div></section><section class="ds" data-s="x2">'+ed("t.shots","h2")+'<div class="shots">'+shots+'</div>'+(ADMIN?'<p class="hint">'+((a.shots&&a.shots.length)?"استخدم الأزرار تحت كل لقطة للترتيب والحذف.":"هذه نماذج توضيحية وليست لقطات مرفوعة. ارفع لقطات التطبيق لتحلّ محلها، وبعد الرفع تظهر أزرار الترتيب تحت كل لقطة.")+'</p><button class="eb in" data-act="cam" data-p="'+p+'.shots">📷 إضافة لقطة شاشة</button>':'')+'</section><section class="ds" data-s="x3">'+ed("t.about","h2") +inlineAppContent(a,"desc","الوصف")+inlineAppContent(a,"feat","المميزات")+'</section><section class="ds" data-s="x4">'+ed("t.like","h2")+'<div class="more">'+others.map(function(o){return '<a href="'+appHref(o)+'">'+icon(o,"l")+'<b>'+E(o.name)+'</b><small>'+E(o.cat)+'</small></a>'}).join("")+'</div></section>')}
 function more(a){
  var p="a."+D.a.indexOf(a),info=["dev","ver","size","upd","langs","compat","price"].filter(function(k){return a[k]}).map(function(k){return '<div>'+ed("t."+k,"dt")+ed(p+"."+k,"dd")+'</div>'}).join("");
