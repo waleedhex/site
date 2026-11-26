@@ -41,18 +41,27 @@ function collectSeoPhrases(documents){
  return [...entries.values()].sort((a,b)=>(b.score+b.sources.size*2)-(a.score+a.sources.size*2)||
   a.label.localeCompare(b.label,"ar")).slice(0,40);
 }
-function seoDescription(preferred, content){
+function seoLine(value){
+ return typeof value==="string"?value.replace(/\s+/g," ").trim():"";
+}
+function includesSeoPhrase(text,phrase){
+ const words=value=>seoWord(value).replace(/[^\p{L}\p{N}]+/gu," ").trim();
+ const term=words(phrase);
+ return Boolean(term)&&(" "+words(text)+" ").includes(" "+term+" ");
+}
+function seoDescription(preferred, content, target=""){
  const first=seoText(preferred).replace(/\s+/g," ").trim();
  const parts=seoText(content).split(/[\n.!؟!?]+/).map(part=>part.replace(/\s+/g," ").trim()).filter(Boolean);
  const phrases=collectSeoPhrases([{title:"",fields:[[preferred,4],[content,2]]}]);
  const scored=parts.map((part,index)=>{
   const text=seoWord(part);
-  const score=phrases.slice(0,10).reduce((total,phrase,rank)=>total+(text.includes(seoWord(phrase.label))?10-rank:0),0);
+  const score=(includesSeoPhrase(part,target)?500:0)+phrases.slice(0,10).reduce((total,phrase,rank)=>total+(text.includes(seoWord(phrase.label))?10-rank:0),0);
   return {part,index,score};
  }).sort((a,b)=>b.score-a.score||a.index-b.index);
  const normalized=seoWord(first);
  const best=scored.find(({part})=>!normalized.includes(seoWord(part))&&part.length>=12)?.part||"";
- const summary=first&&first.length<90&&best?first.replace(/[.،؛]+$/,"")+" — "+best:first||best||parts[0]||"";
+ const targeted=seoLine(target)&&best&&includesSeoPhrase(best,target)&&!includesSeoPhrase(first,target);
+ const summary=targeted&&first.length>=90?best:first&&first.length<90&&best?first.replace(/[.،؛]+$/,"")+" — "+best:first||best||parts[0]||"";
  if(summary.length<=160)return summary;
  const shortened=summary.slice(0,157);
  const boundary=shortened.lastIndexOf(" ");
@@ -63,9 +72,20 @@ function seoDescription(preferred, content){
    const rich=app[field+"Rich"];
    return typeof rich==="string"?render(rich,true):app[field];
   });
-  return seoDescription(app.sub,contents.filter(Boolean).join("\n"));
+  return seoLine(app.seoSummary)||seoDescription(app.sub,contents.filter(Boolean).join("\n"),seoLine(app.seoTarget));
  }
- const seo={collectSeoPhrases,seoDescription,appDescription};
+ function siteMetadata(data,app,render){
+  const brand=seoLine(data.s.name)||"واجهة التطبيقات";
+  const item=app||data.s;
+  const name=app?seoLine(app.name)||brand:brand;
+  const target=seoLine(item.seoTarget).slice(0,100);
+  const preferred=target&&!includesSeoPhrase(name,target)?name+" – "+target:name;
+  const title=seoLine(item.seoTitle)||(app&&name!==brand?preferred+" | "+brand:preferred);
+  const description=app?appDescription(app,render):seoLine(item.seoSummary)||seoDescription("",
+   data.a.filter(app=>!app.hd).map(app=>app.sub).filter(Boolean).join("\n"),target);
+  return {title,description};
+ }
+ const seo={collectSeoPhrases,seoDescription,siteMetadata};
  if(typeof module==="object"&&module.exports)module.exports=seo;
  else root.siteSeo=seo;
 })(globalThis);
