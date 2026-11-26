@@ -1,5 +1,8 @@
 {
+  "functions": { "api/site-page.js": { "includeFiles": "index.html" } },
   "rewrites": [
+    { "source": "/", "destination": "/api/site-page?route=home" },
+    { "source": "/apps/:slug", "destination": "/api/site-page?route=app&slug=:slug" },
     { "source": "/sitemap.xml", "destination": "/api/site-page?route=sitemap" },
     { "source": "/robots.txt", "destination": "/api/site-page?route=robots" },
     { "source": "/blog", "destination": "/api/site-page?route=blog" },
