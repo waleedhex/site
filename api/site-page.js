@@ -1,3 +1,4 @@
+const siteRoutes = require('../site-routes');
 const { readFile } = require('node:fs/promises');
 const path = require('node:path');
 const { siteMetadata, pageMetadata } = require('../seo-phrases');
@@ -7,15 +8,14 @@ const origin = new URL(process.env.SITE_ORIGIN || 'https://hexgames.vercel.app')
 const supabase = process.env.SUPABASE_URL || 'https://poxlnqwjzepnxqpxymto.supabase.co';
 const key = process.env.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_A-8c5QBeywouKmPGHTJGRQ__ilBGlNf';
 const siteName = 'واجهة التطبيقات';
-const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 function escape(value = '') {
   return String(value).replace(/[&<>"']/g, character =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
 }
 
-function pagePath(page) {
-  return (page.kind === 'post' ? '/blog/' : '/') + encodeURIComponent(page.slug);
+function pagePath(page, settings) {
+  return (page.kind === 'post' ? '/blog/' : '/') + encodeURIComponent(siteRoutes.pageSlug(settings, page));
 }
 
 function imageUrl(value) {
@@ -54,7 +54,7 @@ ${shareImage ? `<meta property="og:image" content="${escape(shareImage)}">` : ''
   article p{white-space:pre-wrap;overflow-wrap:anywhere} nav{display:flex;gap:1rem;flex-wrap:wrap}
 </style></head><body><header><a href="/">${siteName}</a></header>
 <main>${body}</main><footer><nav aria-label="روابط الموقع"><a href="/">الرئيسية</a><a href="/blog">المدونة</a>
-${nav.map(page => `<a href="${pagePath(page)}">${escape(page.title)}</a>`).join('')}
+${nav.map(page => `<a href="${pagePath(page, settings)}">${escape(page.title)}</a>`).join('')}
 </nav></footer></body></html>`;
 }
 
@@ -85,11 +85,11 @@ async function readTheme() {
 }
 
 function visibleApps(data) {
-  return data.a.filter(app => !app.hd && typeof app.slug === 'string' && slugPattern.test(app.slug));
+  return data.a.filter(app => !app.hd && siteRoutes.validSlug(siteRoutes.appSlug(app)));
 }
 
 function appPath(app) {
-  return '/apps/' + encodeURIComponent(app.slug);
+  return '/apps/' + encodeURIComponent(siteRoutes.appSlug(app));
 }
 
 function appProse(app, field) {
@@ -123,7 +123,7 @@ async function siteHtml(data, app) {
     .replace(/<meta name="description" content="[^"]*">/, () => `<meta name="description" content="${escape(description)}">${metadata}`)
     .replace('<div id="app"></div>', () => `<div id="app" data-rendered="true">${header}<main class="w">${body}</main></div>`)
     .replace(/(<script id="data" type="application\/json">)[\s\S]*?(<\/script>)/, (_, open, close) => open + safeData + close)
-    .replace(/src="\.\/(site-theme|page-content|seo-phrases)\.js"/g, 'src="/$1.js"')
+    .replace(/src="\.\/(site-theme|page-content|seo-phrases|site-routes)\.js"/g, 'src="/$1.js"')
     .replace('</head>', () => `<style>${themeCss(data.s)}</style></head>`);
 }
 
@@ -140,6 +140,11 @@ module.exports = async function handler(req, res) {
   }
   const { route, slug } = req.query;
   const html = (status, options) => send(res, status, 'text/html', layout(options));
+  const redirect = location => {
+    res.setHeader('Location', location);
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(308).end();
+  };
   const notFound = settings => html(404, {
     title: 'الصفحة غير موجودة', indexable: false, settings,
     body: '<h1>الصفحة غير موجودة</h1><p><a href="/">العودة للرئيسية</a></p>'
@@ -153,15 +158,16 @@ module.exports = async function handler(req, res) {
       const [data, pages] = await Promise.all([readSite(), readPages({ select: 'slug,kind,updated_at', indexable: 'eq.true' })]);
       const entries = [{ path: '/' }, { path: '/blog' },
         ...visibleApps(data).map(app => ({ path: appPath(app) })),
-        ...pages.map(page => ({ path: pagePath(page), updated: page.updated_at }))];
+        ...pages.map(page => ({ path: pagePath(page, data.s), updated: page.updated_at }))];
       const urls = entries.map(({ path, updated }) => `<url><loc>${escape(origin + path)}</loc>${updated ? `<lastmod>${escape(updated)}</lastmod>` : ''}</url>`).join('');
       return send(res, 200, 'application/xml', `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`);
     }
 
     if (route === 'home' || route === 'app') {
       const data = await readSite();
-      const app = route === 'app' && visibleApps(data).find(item => item.slug === slug);
+      const app = route === 'app' && siteRoutes.validSlug(slug) && siteRoutes.resolveApp(visibleApps(data), slug);
       if (route === 'app' && !app) return notFound(data.s);
+      if (app && siteRoutes.appSlug(app) !== slug) return redirect(appPath(app));
       return send(res, 200, 'text/html', await siteHtml(data, app));
     }
 
@@ -171,20 +177,22 @@ module.exports = async function handler(req, res) {
         readPages({ select: 'slug,kind,title,description', kind: 'eq.post', order: 'updated_at.desc' }),
         footer(), readTheme()
       ]);
-      const list = posts.map(post => `<li><a href="${pagePath(post)}">${escape(post.title)}</a>${post.description ? `<p>${escape(post.description)}</p>` : ''}</li>`).join('');
+      const list = posts.map(post => `<li><a href="${pagePath(post, settings)}">${escape(post.title)}</a>${post.description ? `<p>${escape(post.description)}</p>` : ''}</li>`).join('');
       return html(200, { title: 'المدونة | ' + siteName, description: 'مقالات واجهة التطبيقات',
         path: '/blog', nav, settings, body: '<h1>المدونة</h1>' + (list ? '<ul>' + list + '</ul>' : '<p>لا توجد مقالات منشورة بعد.</p>') });
     }
-    if (!['page', 'post'].includes(route) || typeof slug !== 'string' || slug.length > 80 || !slugPattern.test(slug)) return notFound();
+    if (!['page', 'post'].includes(route) || !siteRoutes.validSlug(slug)) return notFound();
 
-    const [[page], nav, settings] = await Promise.all([
-      readPages({ select: '*', slug: 'eq.' + slug, kind: 'eq.' + route, limit: '1' }), footer(), readTheme()
-    ]);
+    const [nav, settings] = await Promise.all([footer(), readTheme()]);
+    const original = siteRoutes.resolvePage(settings, route, slug);
+    if (!siteRoutes.validSlug(original)) return notFound(settings);
+    const [page] = await readPages({ select: '*', slug: 'eq.' + original, kind: 'eq.' + route, limit: '1' });
     if (!page) return notFound(settings);
+    if (siteRoutes.pageSlug(settings, page) !== slug) return redirect(pagePath(page, settings));
     const paragraphs = renderContent(page.body);
     return html(200, {
       ...pageMetadata(page, settings, renderContent),
-      path: pagePath(page), image: page.image, indexable: page.indexable, nav, settings,
+      path: pagePath(page, settings), image: page.image, indexable: page.indexable, nav, settings,
       body: `<article><h1>${escape(page.title)}</h1>${paragraphs}</article>`
     });
   } catch {
