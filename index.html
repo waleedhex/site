@@ -173,6 +173,13 @@ body:not(.adm) .ft [data-e]{-webkit-user-select:none;user-select:none;touch-acti
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none;min-width:0;flex:none}.lgi{width:auto;display:block;object-fit:contain;filter:drop-shadow(0 2px 6px rgb(0 0 0/.18))}.brand .bn{font-size:1.25rem;font-weight:800}
 @media(max-width:640px){.brand .bn{font-size:1.05rem}}
 
+.media-library-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:12px;margin:12px 0}
+.media-library-item{display:grid;gap:6px;align-content:start;padding:8px;background:var(--secondary);border:1px solid var(--border);border-radius:10px}
+.media-library-item img{display:block;width:100%;height:105px;object-fit:contain;background:var(--card);border-radius:6px}
+.media-library-item small{overflow-wrap:anywhere}.media-library-actions{display:flex;gap:8px;flex-wrap:wrap}
+.media-picker{width:min(90vw,680px);max-height:80vh;max-height:80dvh;padding:18px;border:1px solid var(--border);border-radius:14px;background:var(--bg);color:var(--fg)}
+.media-picker::backdrop{background:rgb(0 0 0/.48)}.media-picker button{cursor:pointer}.media-picker h2{margin-top:0}
+.media-picker .media-library-item[aria-pressed=true]{outline:2px solid var(--primary)}
 .seo-assistant ol{padding-inline-start:24px;margin-block:10px}
 .seo-assistant li{padding:6px 0;border-bottom:1px solid var(--border)}
 .seo-assistant small{display:block;color:var(--muted)}
@@ -213,7 +220,8 @@ var STAR='<svg class="st" viewBox="0 0 24 24"><path d="m12 2 3.1 6.3 6.9 1-5 4.9
 
 function icon(app,size=""){
  const hue=Number(app.hue)||0;
- const image=app.img?'<img src="'+E(app.img)+'" alt="" decoding="async"'+
+ const imageSource=app.img&&size!=="xl"?app.img.replace(/^img:/,"img-thumb:"):app.img;
+ const image=imageSource?'<img src="'+E(imageSource)+'" alt="" decoding="async"'+
   (size==="xl"?' fetchpriority="high"':' loading="lazy"')+'>':"";
  return '<div class="ic '+size+'" style="background:linear-gradient(135deg,oklch(.8 .14 '+hue+
   '),oklch(.6 .18 '+(hue+30)+'))"><span aria-hidden="true">'+E(app.emoji||"🎮")+'</span>'+image+'</div>';
@@ -572,8 +580,8 @@ function fld(pre,f){var id=pre?pre+"."+f[0]:f[0],v=get(id),t=f[2]||"text";
  if(t=="check")return '<label class="ck"><input type="checkbox" data-p="'+id+'"'+(v?" checked":"")+'> '+f[1]+'</label>';
  if(t=="area")return '<label>'+f[1]+'<textarea rows="4" data-p="'+id+'">'+E(v)+'</textarea></label>';
  if(t=="color")return '<label>'+f[1]+'<input type="color" data-p="'+id+'" value="'+(/^#[0-9a-f]{6}$/i.test(v)?v:"#888888")+'"><button data-act="clr" data-p="'+id+'">افتراضي</button></label>';
- if(t=="img")return '<div class="im"><span>'+f[1]+'</span>'+(v?'<img src="'+E(v)+'" alt="">':'')+'<input type="file" accept="image/*,.webp" data-u="'+id+'">'+(v?'<button data-act="clr" data-p="'+id+'">إزالة الصورة</button>':'')+'</div>';
- if(t=="imgs")return '<div class="im"><span>'+f[1]+'</span><div class="th">'+(v||[]).map(function(u,i){return '<div><img src="'+E(u)+'" alt=""><div class="tb"><button data-act="up" data-p="'+id+'" data-i="'+i+'">→</button><button data-act="rm" data-p="'+id+'" data-i="'+i+'">🗑 حذف</button><button data-act="dn" data-p="'+id+'" data-i="'+i+'">←</button></div></div>'}).join("")+'</div><input type="file" accept="image/*,.webp" multiple data-m="'+id+'"></div>';
+ if(t=="img")return '<div class="im"><span>'+f[1]+'</span>'+(v?'<img src="'+E(v)+'" alt="">':'')+'<button type="button" data-act="cam" data-p="'+id+'">اختيار صورة</button>'+(v?'<button data-act="clr" data-p="'+id+'">إزالة الصورة</button>':'')+'</div>';
+ if(t=="imgs")return '<div class="im"><span>'+f[1]+'</span><div class="th">'+(v||[]).map(function(u,i){return '<div><img src="'+E(u)+'" alt=""><div class="tb"><button data-act="up" data-p="'+id+'" data-i="'+i+'">→</button><button data-act="rm" data-p="'+id+'" data-i="'+i+'">🗑 حذف</button><button data-act="dn" data-p="'+id+'" data-i="'+i+'">←</button></div></div>'}).join("")+'</div><button type="button" data-act="cam" data-p="'+id+'">إضافة صور</button></div>';
  return '<label>'+f[1]+'<input type="'+t+'" data-p="'+id+'" value="'+E(v)+'"'+(t=="range"?' min="'+(f[3]?f[3][0]:0)+'" max="'+(f[3]?f[3][1]:360)+'"':'')+'></label>'}
 let pageEditor={pages:[],slug:"",kind:"",loaded:false,busy:false};
 function pageEditorHtml(){
@@ -882,6 +890,7 @@ $("adm").addEventListener("submit",event=>{
  saveSeoAssistant(event.target);
 });
 function pn(){
+ if(PT==="media")return mediaLibraryHtml();
  if(PT==="seo")return seoAssistantPanel();
  if(PT==="homeTabs")return homeTabsPanel();
  if(PT==="pages")return pageEditorHtml();
@@ -893,22 +902,15 @@ function pn(){
 function pnl(){var p=$("pn");if(!p)return;var o=[].map.call(p.querySelectorAll("details"),function(d){return d.open}),y=p.scrollTop;p.hidden=!PT;p.innerHTML=R(PT?'<div class="ph"><b>لوحة التحكم</b><button data-act="tab" data-p="'+PT+'">⌄ إخفاء اللوحة</button></div>'+pn():"");p.querySelectorAll("details").forEach(function(d,i){d.open=!!o[i]});p.scrollTop=y}
 function adm(){document.body.classList.toggle("adm",ADMIN&&!MIN);var a=$("adm");if(!ADMIN){a.innerHTML="";return}
  if(MIN){a.innerHTML='<div class="fab"><button data-act="max">⚙ وضع المدير</button><button class="sv" data-act="save">حفظ ونشر</button></div>';return}
- a.innerHTML='<div class="pn" id="pn" hidden></div><div class="adb"><b>وضع المدير</b>'+[["s","الإعدادات"],["b","اللافتات"],["a","التطبيقات"],["c","الفئات"],["homeTabs","تبويبات الرئيسية"],["t","النصوص"],["pages","الصفحات والسيو"],["seo","مساعد السيو"]].map(function(x){return '<button data-act="tab" data-p="'+x[0]+'" aria-pressed="'+(PT==x[0])+'">'+x[1]+'</button>'}).join("")+'<button class="sv" data-act="save">حفظ ونشر</button><button data-act="undo">تراجع</button><button data-act="min">⌄ تصغير</button><button data-act="exit">خروج</button></div>';pnl()}
+ a.innerHTML='<div class="pn" id="pn" hidden></div><div class="adb"><b>وضع المدير</b>'+[["s","الإعدادات"],["b","اللافتات"],["a","التطبيقات"],["c","الفئات"],["homeTabs","تبويبات الرئيسية"],["media","مكتبة الصور"],["t","النصوص"],["pages","الصفحات والسيو"],["seo","مساعد السيو"]].map(function(x){return '<button data-act="tab" data-p="'+x[0]+'" aria-pressed="'+(PT==x[0])+'">'+x[1]+'</button>'}).join("")+'<button class="sv" data-act="save">حفظ ونشر</button><button data-act="undo">تراجع</button><button data-act="min">⌄ تصغير</button><button data-act="exit">خروج</button></div>';pnl()}
 function toast(m){var t=$("ts");t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(function(){t.hidden=true},4000)}
 function dirty(){clearTimeout(dirty.t);dirty.t=setTimeout(function(){var f=document.activeElement;if(f&&f.dataset&&(f.dataset.e!=null||f.dataset.r!=null||f.closest(".inline-app-editor[open]"))){dirty();return}theme();route(true)},350)}
 async function save(){if(savingSite)return;try{if(!SECRET){toast("سجّل الدخول أولًا");return}const incomplete=D.a.find(app=>app.showCustomDownload&&(!app.customDownloadLabel?.trim()||!customDownloadUrl(app.customDownloadUrl)));
  if(incomplete){toast("أكمل نص الزر المخصص ورابطه في تطبيق «"+incomplete.name+"» أو أوقف إظهاره");return}
  savingSite=true;toast("جارٍ الحفظ…");
- const previous=ORIG,saved=JSON.stringify(D);
+ const saved=JSON.stringify(D);
  var r=await api("admin_save",{p_secret:SECRET,p_data:JSON.parse(saved)});
- if(r==="ok"){ORIG=saved;toast("تم الحفظ والنشر ✓ يراه الزوار الآن");gc(previous,saved)}else toast(MSG[r]||("تعذّر الحفظ: "+r))}catch(e){toast("تعذّر الحفظ، تحقق من الاتصال ("+(e&&e.message||e)+")")}finally{savingSite=false}}
-function gc(previous,saved){
- const ids=new Set(Object.keys(IMG));
- for(const match of String(previous||"").matchAll(/img:([a-z0-9_-]{1,80})/g))ids.add(match[1]);
- for(const match of saved.matchAll(/img:([a-z0-9_-]{1,80})/g))ids.delete(match[1]);
- for(const match of JSON.stringify(D).matchAll(/img:([a-z0-9_-]{1,80})/g))ids.delete(match[1]);
- ids.forEach(id=>{api("admin_del_image",{p_secret:SECRET,p_id:id}).catch(()=>{});delete IMG[id]});
-}
+ if(r==="ok"){ORIG=saved;toast("تم الحفظ والنشر ✓ يراه الزوار الآن")}else toast(MSG[r]||("تعذّر الحفظ: "+r))}catch(e){toast("تعذّر الحفظ، تحقق من الاتصال ("+(e&&e.message||e)+")")}finally{savingSite=false}}
 function prof(p){
  if(p==="s.logo")return [400,"png"];
  if(/^a\.\d+\.img$/.test(p))return [256,"png"];
@@ -942,18 +944,210 @@ function shrink(file,maxSize,fallback){
   image.src=url;
  });
 }
-async function upl(files,p,multi){try{if(!SECRET){toast("سجّل الدخول أولًا");return}toast("جارٍ رفع الصورة…");var pf=prof(p);
- for(var i=0;i<files.length;i++){var d=await shrink(files[i],pf[0],pf[1]),id="i"+Date.now().toString(36)+Math.random().toString(36).slice(2,8),r=await api("admin_put_image",{p_secret:SECRET,p_id:id,p_data:d});
-  if(r!=="ok"){toast(MSG[r]||("تعذّر الرفع: "+r));return}IMG[id]=d;if(multi)get(p).push("img:"+id);else set(p,"img:"+id)}
- toast("تم رفع الصورة. اضغط حفظ ونشر لتظهر للزوار");pnl();dirty()}catch(e){toast("تعذّر الرفع: "+(e&&e.message||e))}}
+const mediaIdPattern=/^[a-z0-9_-]{1,80}$/;
+let mediaLibrary={ids:null,busy:false,error:false,action:false};
+let mediaSelection=null;
+
+function mediaUsage(data,id){
+ const escaped=id.replace(/[.*+?^\${}()|[\]\\]/g,"\\$&");
+ const pattern=new RegExp("(?:img:|/media/)"+escaped+"(?![a-z0-9_-])");
+ const has=value=>pattern.test(JSON.stringify(value??""));
+ return [
+  ...(has(data.s)?["إعدادات الموقع"]:[]),
+  ...(data.a||[]).filter(has).map(app=>app.name),
+  ...(data.b||[]).filter(has).map(banner=>banner.t||"لافتة")
+ ];
+}
+
+function mediaLibraryHtml(picking=false){
+ const state=mediaLibrary, ids=state.ids||new Set(), active=mediaSelection?.ids||new Set();
+ const images=[...ids].filter(id=>!id.startsWith("thumb-")).reverse();
+ const status=state.busy?"جارٍ تحميل المكتبة…":state.error?"تعذّر تحميل مكتبة الصور. اضغط تحديث للمحاولة مجددًا.":"";
+ const items=images.map((id,index)=>{
+  const used=picking?[]:[...new Set(mediaUsage(D,id).concat(mediaUsage(JSON.parse(ORIG),id)))];
+  const image='<img src="img-thumb:'+id+'" alt="" loading="lazy" decoding="async">';
+  const label='صورة '+(index+1);
+  if(picking)return '<button type="button" class="media-library-item" data-media-pick="'+id+'" aria-pressed="'+active.has(id)+'">'+image+'<span>'+label+'</span></button>';
+  return '<article class="media-library-item"><a href="/media/'+id+'" target="_blank" rel="noopener" aria-label="معاينة '+label+'">'+image+'</a>'+
+   '<small>'+label+'</small>'+(used.length?'<small>مستخدمة في '+E(used.join("، "))+'</small>':
+   '<button type="button" data-media-delete="'+id+'"'+(state.action?' disabled':'')+'>حذف الصورة</button>')+'</article>';
+ }).join("");
+ const controls='<div class="media-library-actions"><button type="button" data-media-upload>رفع من الجهاز</button>'+
+  '<button type="button" data-media-refresh'+(state.busy?' disabled':'')+'>تحديث المكتبة</button>'+
+  (picking?'<button type="button" data-media-apply'+(!active.size?' disabled':'')+'>استخدام الصور المختارة</button><button type="button" data-media-close>إلغاء</button>':
+   '<button type="button" data-media-thumbnails'+(state.action?' disabled':'')+'>توليد مصغرات الأيقونات الحالية</button>')+'</div>';
+ return controls+(status?'<p role="status">'+status+'</p>':'')+
+  (items?'<div class="media-library-grid">'+items+'</div>':!status?'<p>المكتبة فارغة. ارفع صورة من جهازك.</p>':'');
+}
+function updateMediaView(){
+ const dialog=$("media-picker");
+ if(dialog?.open){
+  const y=dialog.scrollTop;
+  dialog.innerHTML='<h2 id="media-picker-title">اختيار صورة من المكتبة</h2>'+R(mediaLibraryHtml(true));
+  dialog.scrollTop=y;
+ }
+ if(PT==="media")pnl();
+}
+async function loadMediaLibrary(){
+ const state=mediaLibrary;
+ if(state.busy)return;
+ state.busy=true;state.error=false;updateMediaView();
+ try{
+  const ids=new Set();
+  const count=1000;
+  for(let offset=0;;offset+=count){
+   const batch=await rest("site_images?select=id&order=id.asc&limit="+count+"&offset="+offset);
+   if(state!==mediaLibrary)return;
+   batch.forEach(row=>{if(mediaIdPattern.test(row.id))ids.add(row.id)});
+   if(batch.length<count)break;
+  }
+  state.ids=ids;
+ }catch{state.error=true}
+ finally{state.busy=false;if(state===mediaLibrary)updateMediaView()}
+}
+function openMediaPicker(field){
+ const dialog=$("media-picker");
+ mediaSelection={field,multiple:Array.isArray(get(field)),ids:new Set()};
+ dialog.showModal();
+ updateMediaView();
+ loadMediaLibrary();
+}
+function useMedia(field,ids){
+ if(!field||!ids.length)return;
+ const refs=ids.map(id=>"img:"+id);
+ if(Array.isArray(get(field))){
+  set(field,[...new Set(get(field).concat(refs))]);
+ }else set(field,refs[0]);
+ pnl();dirty();
+}
+function openMediaFiles(field){
+ const input=$("fi");
+ input.dataset.u=field||"";
+ input.multiple=!field||Array.isArray(get(field));
+ input.value="";
+ input.click();
+}
+async function writeMedia(id,data){
+ const result=await api("admin_put_image",{p_secret:SECRET,p_id:id,p_data:data});
+ if(result!=="ok")throw new Error(MSG[result]||"تعذّر رفع الصورة");
+ if(mediaLibrary.ids)mediaLibrary.ids.add(id);
+}
+async function writeThumbnail(id,file){
+ const thumb=await shrink(file,160,"png");
+ await writeMedia("thumb-"+id,thumb);
+}
+async function upl(files,field){
+ if(!ADMIN||!SECRET)return;
+ const state=mediaLibrary;
+ if(state.action)return;
+ const ids=[];
+ let failed=0, thumbs=0;
+ state.action=true;
+ toast("جارٍ رفع الصور…");
+ try{
+  const profile=field?prof(field):[1400,"png"];
+  for(const file of files){
+   try{
+    const image=await shrink(file,...profile);
+    const id="i"+Date.now().toString(36)+Math.random().toString(36).slice(2,10);
+    await writeMedia(id,image);
+    if(state!==mediaLibrary)return;
+    IMG[id]=image;
+    ids.push(id);
+    try{await writeThumbnail(id,file)}catch{thumbs++}
+   }catch{failed++}
+  }
+  useMedia(field,ids);
+  if(ids.length){
+   $("media-picker")?.close();
+   toast((field?"رُفعت الصور. اضغط حفظ ونشر لتظهر.":"تم الرفع إلى المكتبة")+
+    (failed?" · تعذّر رفع "+failed:"")+(thumbs?" · تعذّر توليد "+thumbs+" مصغّرة":""));
+  }else toast("تعذّر رفع الصور المختارة");
+ }finally{
+  state.action=false;
+  if(state===mediaLibrary){updateMediaView();loadMediaLibrary()}
+ }
+}
+async function backfillIconThumbnails(){
+ const state=mediaLibrary;
+ if(state.action||!state.ids)return;
+ state.action=true;updateMediaView();
+ const ids=[...new Set(D.a.map(app=>/^img:([a-z0-9_-]+)$/.exec(app.img||"")?.[1]).filter(Boolean))];
+ let made=0,failed=0;
+ try{
+  for(const id of ids){
+   if(state!==mediaLibrary||!ADMIN)return;
+   if(state.ids.has("thumb-"+id))continue;
+   try{
+    const response=await fetch(siteImageUrl("img:"+id),{signal:tmo(12000)});
+    if(!response.ok)throw new Error("Unavailable image");
+    const file=await response.blob();
+    await writeThumbnail(id,file);made++;
+   }catch{failed++}
+  }
+  toast(made?"تم توليد "+made+" مصغّرة"+(failed?"، وتعذّر توليد "+failed:""):
+   failed?"تعذّر توليد المصغّرات":"الأيقونات التي في المكتبة لها مصغّرات بالفعل");
+ }finally{state.action=false;if(state===mediaLibrary)updateMediaView()}
+}
+async function removeMedia(id){
+ const state=mediaLibrary;
+ if(!ADMIN||state.action||savingSite||!state.ids?.has(id))return;
+ if(!confirm("حذف هذه الصورة من المكتبة؟"))return;
+ state.action=true;updateMediaView();
+ try{
+  const [published,articles,drafts]=await Promise.all([
+   readSiteContent(),
+   rest("site_pages_published?select=title,image,body&limit=1000"),
+   api("admin_site_pages",{p_secret:SECRET,p_action:"list",p_slug:null,p_page:null})
+  ]);
+  if(state!==mediaLibrary||!ADMIN)return;
+  if(drafts.status!=="ok")throw new Error("تعذّر التحقق من مسودات الصفحات");
+  const articlesUsing=articles.concat(drafts.pages).filter(page=>
+   mediaUsage({s:page},id).length).map(page=>page.title);
+  const uses=[...new Set([...mediaUsage(D,id),...mediaUsage(published,id),...articlesUsing])];
+  if(uses.length){toast("الصورة مستخدمة في "+uses.join("، "));return}
+  const thumbId="thumb-"+id;
+  const result=await api("admin_del_image",{p_secret:SECRET,p_id:id});
+  if(result!=="ok")throw new Error(MSG[result]||"تعذّر حذف الصورة");
+  delete IMG[id];
+  state.ids.delete(id);
+  if(state.ids.has(thumbId)){
+   const thumbResult=await api("admin_del_image",{p_secret:SECRET,p_id:thumbId}).catch(()=>"");
+   if(thumbResult==="ok")state.ids.delete(thumbId);
+   else{toast("حُذفت الصورة وتعذّر حذف نسختها المصغّرة");return}
+  }
+  toast("حُذفت الصورة من المكتبة");
+ }catch(e){toast(e.message)}
+ finally{state.action=false;if(state===mediaLibrary)updateMediaView()}
+}
+document.addEventListener("click",event=>{
+ if(!ADMIN)return;
+ const button=event.target.closest("[data-media-upload],[data-media-refresh],[data-media-pick],[data-media-apply],[data-media-delete],[data-media-close],[data-media-thumbnails]");
+ if(!button)return;
+ if(button.hasAttribute("data-media-upload"))openMediaFiles(mediaSelection?.field);
+ if(button.hasAttribute("data-media-refresh"))loadMediaLibrary();
+ if(button.hasAttribute("data-media-close"))$("media-picker").close();
+ if(button.hasAttribute("data-media-thumbnails"))backfillIconThumbnails();
+ if(button.dataset.mediaDelete)removeMedia(button.dataset.mediaDelete);
+ if(button.dataset.mediaPick&&mediaSelection){
+  const id=button.dataset.mediaPick;
+  if(!mediaSelection.multiple){useMedia(mediaSelection.field,[id]);$("media-picker").close();return}
+  if(mediaSelection.ids.has(id))mediaSelection.ids.delete(id);else mediaSelection.ids.add(id);
+  updateMediaView();
+ }
+ if(button.hasAttribute("data-media-apply")&&mediaSelection){
+  useMedia(mediaSelection.field,[...mediaSelection.ids]);
+  $("media-picker").close();
+ }
+});
 document.addEventListener("click",function(e){if(ADMIN&&e.target.closest("[data-e]")){e.preventDefault();return}var b=e.target.closest("[data-act]");if(!b)return;var a=b.dataset.act,p=b.dataset.p,i=+b.dataset.i;
- if(a=="exit"){seoSources=newSeoSources();pageEditor={pages:[],slug:"",kind:"",loaded:false,busy:false};SECRET="";ss("hs","");ADMIN=false;MIN=false;PT="";adm();route(true);return}
+ if(a=="exit"){$("media-picker")?.close();mediaSelection=null;mediaLibrary={ids:null,busy:false,error:false,action:false};seoSources=newSeoSources();pageEditor={pages:[],slug:"",kind:"",loaded:false,busy:false};SECRET="";ss("hs","");ADMIN=false;MIN=false;PT="";adm();route(true);return}
  if(a=="min"){MIN=true;adm();return}if(a=="max"){MIN=false;adm();return}
- if(a=="tab"){PT=PT==p?"":p;adm();if(PT==="pages"&&!pageEditor.loaded)loadPageEditor();if(PT==="seo")refreshSeoAssistant();return}
+ if(a=="tab"){PT=PT==p?"":p;adm();if(PT==="pages"&&!pageEditor.loaded)loadPageEditor();if(PT==="seo")refreshSeoAssistant();if(PT==="media")loadMediaLibrary();return}
  if(a=="save")return save();
  if(a=="undo"){D=JSON.parse(ORIG);theme();adm();route(true);toast("تم التراجع عن التعديلات");return}
  e.preventDefault();
- if(a=="cam"){var fi=$("fi");fi.dataset.u=p;fi.multiple=Array.isArray(get(p));fi.value="";fi.click();return}
+ if(a=="cam"){if(ADMIN)openMediaPicker(p);return}
  if(a=="addtab"){var ap=D.a[i];ap.tabs.push({n:"تبويب جديد",b:"",img:""});navigateSite(appHref(ap,ap.tabs.length-1));return}
  if(a=="edit"){PT=p;adm();var ds=$("pn").querySelectorAll(":scope > details")[i];if(ds){ds.open=true;ds.scrollIntoView({block:"nearest"})}return}
  if(a=="tg"){var ap=D.a[i];ap[p]=!ap[p];pnl();dirty();return}
@@ -983,7 +1177,7 @@ $("adm").addEventListener("input",function(e){var t=e.target;if(t.dataset.p==nul
   set(t.dataset.p,label);dirty();return;
  }
  set(t.dataset.p,t.type=="checkbox"?t.checked:(t.type=="number"||t.type=="range")?+t.value:t.value);dirty()});
-$("adm").addEventListener("change",function(e){var t=e.target;if(t.files&&t.files.length){if(t.dataset.u)upl(t.files,t.dataset.u,false);else if(t.dataset.m)upl(t.files,t.dataset.m,true)}});
+
 document.addEventListener("input",function(e){var t=e.target.closest&&e.target.closest("[data-e]");if(t)set(t.dataset.e,t.textContent.replace(/\s+/g," ").trim())});
 document.addEventListener("focusout",function(e){if(ADMIN&&e.target.dataset&&e.target.dataset.e!=null)dirty()});
 document.addEventListener("keydown",function(e){var t=e.target;if(e.key=="Enter"&&t.dataset&&t.dataset.e!=null){e.preventDefault();t.blur()}});
@@ -1044,12 +1238,12 @@ var SB="https://poxlnqwjzepnxqpxymto.supabase.co",KEY="sb_publishable_A-8c5QBeyw
 var MSG={bad:"كلمة السر غير صحيحة",locked:"تم القفل 15 دقيقة بسبب محاولات خاطئة",nosecret:"لم تُضبط كلمة السر في قاعدة البيانات بعد",invalid:"بيانات غير صالحة"};
 function ss(k,v){try{if(v===undefined)return sessionStorage.getItem(k)||"";if(v)sessionStorage.setItem(k,v);else sessionStorage.removeItem(k)}catch(e){}return""}
 function siteImageUrl(value){
- const image=/^img:([a-z0-9_-]{1,80})$/.exec(value||"");
+ const image=/^(img|img-thumb):([a-z0-9_-]{1,80})$/.exec(value||"");
  if(!image)return value||"";
- return IMG[image[1]]||"/media/"+encodeURIComponent(image[1]);
+ return IMG[image[2]]||"/media/"+encodeURIComponent(image[2])+(image[1]==="img-thumb"?"/thumb":"");
 }
 function R(h){
- return String(h).replace(/src="(img:[a-z0-9_-]{1,80})"/g,(_,reference)=>'src="'+E(siteImageUrl(reference))+'" data-image-ref="'+reference.slice(4)+'"');
+ return String(h).replace(/src="(img(?:-thumb)?:[a-z0-9_-]{1,80})"/g,(_,reference)=>'src="'+E(siteImageUrl(reference))+'" data-image-ref="'+reference.split(":")[1]+'"');
 }
 document.addEventListener("load",event=>{
  const image=event.target;
@@ -1154,7 +1348,13 @@ async function boot(){
 }
 document.addEventListener("click",function(e){if(ADMIN)return;var f=e.target.closest&&e.target.closest('[data-e="s.footer"]');if(!f)return;var n=Date.now();TAPS=(n-TT<1500)?TAPS+1:1;TT=n;if(TAPS>=4){TAPS=0;gate()}});
 var fi=document.createElement("input");fi.type="file";fi.accept="image/*,.webp";fi.id="fi";fi.hidden=true;document.body.appendChild(fi);
-fi.addEventListener("change",function(){if(fi.files.length)upl(fi.files,fi.dataset.u,Array.isArray(get(fi.dataset.u)))});
+fi.addEventListener("change",function(){if(fi.files.length)upl(Array.from(fi.files),fi.dataset.u)});
+const mediaDialog=document.createElement("dialog");
+mediaDialog.id="media-picker";
+mediaDialog.className="media-picker";
+mediaDialog.setAttribute("aria-labelledby","media-picker-title");
+mediaDialog.addEventListener("close",()=>{if(!mediaDialog.open)mediaSelection=null});
+document.body.appendChild(mediaDialog);
 var th=document.createElement("style");th.id="theme";document.head.appendChild(th);
 boot();
 </script></body></html>
