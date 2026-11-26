@@ -195,7 +195,7 @@ function san(s){try{var t=document.createElement("template");t.innerHTML=String(
  var style=sitePageContent.safeStyle(st);if(style)c.setAttribute("style",style);
  if(g=="a"&&/^(https?:|#|\/)/i.test(hr)){c.setAttribute("href",hr);c.setAttribute("target","_blank");c.setAttribute("rel","noopener noreferrer")}})})(t.content);return t.innerHTML}catch(e){return E(String(s||"").replace(/<[^>]*>/g,""))}}
 function legacy(b){return String(b||"").split(/\n\s*\n/).filter(function(x){return x.trim()}).map(function(x){return '<p>'+E(x.trim()).replace(/\n/g,"<br>")+'</p>'}).join("")}
-function rbar(){return '<div class="rtb">'+[["bold","<b>B</b>"],["italic","<i>I</i>"],["underline","<u>U</u>"],["formatBlock:h2","عنوان"],["formatBlock:h3","عنوان فرعي"],["formatBlock:p","فقرة"],["insertUnorderedList","• قائمة"],["insertOrderedList","1. قائمة"],["justifyRight","يمين"],["justifyCenter","وسط"],["justifyLeft","يسار"],["removeFormat","مسح التنسيق"],["unlink","إزالة الرابط"]].map(function(x){return '<button type="button" data-cmd="'+x[0]+'">'+x[1]+'</button>'}).join("")+'<label>لون النص<input type="color" data-cmd="foreColor" value="#d33a3a"></label><label>تظليل<input type="color" data-cmd="hiliteColor" value="#fff3a0"></label><select data-cmd="fontSize"><option value="">الحجم</option><option value="2">صغير</option><option value="3">عادي</option><option value="5">كبير</option><option value="6">كبير جدًا</option></select><input class="lk" dir="ltr" placeholder="https://"><button type="button" data-cmd="createLink">🔗 رابط</button></div>'}
+function rbar(){return '<div class="rtb">'+[["bold","<b>B</b>"],["italic","<i>I</i>"],["underline","<u>U</u>"],["formatBlock:h2","عنوان"],["formatBlock:h3","عنوان فرعي"],["formatBlock:p","فقرة"],["insertUnorderedList","• قائمة"],["insertOrderedList","1. قائمة"],["justifyRight","يمين"],["justifyCenter","وسط"],["justifyLeft","يسار"],["removeFormat","مسح التنسيق"],["clearBackground","إزالة خلفية النص"],["unlink","إزالة الرابط"]].map(function(x){return '<button type="button" data-cmd="'+x[0]+'">'+x[1]+'</button>'}).join("")+'<label>لون النص<input type="color" data-cmd="foreColor" value="#d33a3a"></label><label>تظليل<input type="color" data-cmd="hiliteColor" value="#fff3a0"></label><select data-cmd="fontSize"><option value="">الحجم</option><option value="2">صغير</option><option value="3">عادي</option><option value="5">كبير</option><option value="6">كبير جدًا</option></select><input class="lk" dir="ltr" placeholder="https://"><button type="button" data-cmd="createLink">🔗 رابط</button><label><input type="checkbox" data-paste-plain> لصق كنص فقط</label></div>'}
 var PO=(function(){try{var d=document.createElement("div");d.contentEditable="plaintext-only";return d.contentEditable==="plaintext-only"}catch(e){return false}})();
 function ed(p,tag,cls,fb,x){var v=get(p);if(!v&&fb!=null)v=fb;return '<'+tag+(cls?' class="'+cls+'"':'')+(x||'')+' data-e="'+p+'"'+(ADMIN?' contenteditable="'+(PO?"plaintext-only":"true")+'" spellcheck="false"':'')+'>'+E(v)+'</'+tag+'>'}
 function eb(p,i,x,c){return ADMIN?'<button class="eb '+(c||"")+'" data-act="edit" data-p="'+p+'" data-i="'+i+'">'+(x||"✎ تحرير")+'</button>':''}
@@ -440,11 +440,6 @@ function appContent(app,field,editing=false){
  }
  return legacyAppContent(field,app[field],editing);
 }
-function appDescriptionCard(app,path){
- if(typeof app.descRich!=="string")return ed(path+".desc","p");
- const text=sitePageContent.render(app.descRich,true).replace(/\s+/g," ").trim();
- return text?'<p>'+E(text.length>240?text.slice(0,237).trimEnd()+"…":text)+'</p>':"";
-}
 function inlineAppContent(app,field,label){
  const preview=appContent(app,field);
  if(!ADMIN)return preview;
@@ -483,7 +478,7 @@ function renderList(){
  const members=filter?.apps ? new Set(filter.apps) : null;
  var L=D.a.filter(app=>isV(app)&&(!members||members.has(app.slug))&&
   (!filter?.category||app.cat===filter.category)&&(app.name+" "+app.sub).toLocaleLowerCase().includes(q));
- $("list").innerHTML=R(L.length?L.map(function(a){var j=D.a.indexOf(a),p="a."+j;return '<article class="row'+(a.hd?' hid':'')+'"><a href="#'+a.slug+'">'+icon(a)+'</a>'+cam(p+".img","📷")+'<div class="in"><div class="hd"><a href="#'+a.slug+'">'+ed(p+".name","span")+'</a><span class="rr">'+(showR(a)?STAR+E(a.rating):'')+'</span></div><p class="s">'+ed(p+".sub","span")+' · '+ed(p+".cat","span")+'</p><a class="d" href="#'+a.slug+'">'+appDescriptionCard(a,p)+'</a>'+stores(a)+eb("a",j,"✎ تحرير","in")+inlineOrderActions("a",j)+'</div></article>'}).join(""):'<p style="color:var(--muted)">'+T("none")+'</p>')}
+ $("list").innerHTML=R(L.length?L.map(function(a){var j=D.a.indexOf(a),p="a."+j;return '<article class="row'+(a.hd?' hid':'')+'"><a href="#'+a.slug+'">'+icon(a)+'</a>'+cam(p+".img","📷")+'<div class="in"><div class="hd"><a href="#'+a.slug+'">'+ed(p+".name","span")+'</a><span class="rr">'+(showR(a)?STAR+E(a.rating):'')+'</span></div><p class="s">'+ed(p+".sub","span")+' · '+ed(p+".cat","span")+'</p>'+stores(a)+eb("a",j,"✎ تحرير","in")+inlineOrderActions("a",j)+'</div></article>'}).join(""):'<p style="color:var(--muted)">'+T("none")+'</p>')}
 function route(keep){
  carouselCleanup.splice(0).forEach(cleanup=>cleanup());
  var y=scrollY,h=decodeURIComponent(location.hash.slice(1)),m=/^(.*?)(-more|-t\d+)?$/.exec(h),k=m[2]?(m[2]=="-more"?"m":+m[2].slice(2)):"o",a=D.a.filter(function(x){return x.slug===m[1]&&isV(x)})[0],el=$("app");
@@ -767,7 +762,10 @@ function rcmd(control,value){
  if(range){const selection=getSelection();selection.removeAllRanges();selection.addRange(range)}
  const command=control.dataset.cmd;
  document.execCommand("styleWithCSS",false,true);
- if(command.startsWith("formatBlock:"))document.execCommand("formatBlock",false,"<"+command.split(":")[1]+">");
+ if(command==="clearBackground"){
+  editor.querySelectorAll("[style]").forEach(element=>element.style.removeProperty("background-color"));
+ }
+ else if(command.startsWith("formatBlock:"))document.execCommand("formatBlock",false,"<"+command.split(":")[1]+">");
  else if(command==="createLink"){
   const link=toolbar.querySelector(".lk").value.trim();
   if(!/^(https?:\/\/[^\s]+|\/(?![\/\\])[^\s]*|#[^\s]*)$/i.test(link)){toast("اكتب رابطًا يبدأ بـ https:// أو مسارًا داخل الموقع");return}
@@ -787,7 +785,8 @@ function syncRichEditor(editor){
 document.addEventListener("paste",event=>{
  const editor=event.target.closest?.(".rte[contenteditable=true]");
  if(!editor||!event.clipboardData)return;
- const rich=event.clipboardData.getData("text/html");
+ const plainOnly=editor.previousElementSibling?.querySelector("[data-paste-plain]")?.checked;
+ const rich=plainOnly?"":event.clipboardData.getData("text/html");
  const plain=event.clipboardData.getData("text/plain");
  if(!rich&&!plain)return;
  event.preventDefault();
