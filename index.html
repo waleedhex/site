@@ -413,7 +413,7 @@ function appHref(app,view="o"){
  return "/apps/"+encodeURIComponent(app.slug)+(fragment?"#"+fragment:"");
 }
 function siteHomeHref(){return location.protocol==="file:"?"#home":"/"}
-function shell(a,on,body){var j=D.a.indexOf(a),p="a."+j;return '<div dir="rtl"><header class="top"><div class="w"><a class="logo brand" href="'+siteHomeHref()+'">'+brand()+'</a><a class="hm" href="#home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>'+ed("t.home","span")+'</a></div></header><main class="w" style="padding-top:24px;max-width:56rem"><a class="back" href="'+siteHomeHref()+'">'+CHL.replace("m15 18-6-6 6-6","m9 18 6-6-6-6")+ed("t.back","span")+'</a><section class="dh">'+icon(a,"xl")+'<div style="flex:1">'+ed(p+".name","h1")+ed(p+".sub","p")+'<div style="margin-top:12px">'+stores(a)+'</div></div>'+eb("a",j,"✎ تحرير التطبيق")+cam(p+".img","📷 صورة الأيقونة")+(ADMIN?'<button class="eb in" style="background:#555" data-act="tg" data-p="hd" data-i="'+j+'">'+(a.hd?"👁 إظهار التطبيق للزوار":"🙈 إخفاء عن الزوار")+'</button><button class="eb in" style="background:#c0392b" data-act="del" data-p="a" data-i="'+j+'">🗑 حذف هذا التطبيق</button>':'')+'</section>'+navHtml(a,on)+''+body+'</main></div>'}
+function shell(a,on,body){var j=D.a.indexOf(a),p="a."+j;return '<div dir="rtl"><header class="top"><div class="w"><a class="logo brand" href="'+siteHomeHref()+'">'+brand()+'</a><a class="hm" href="'+siteHomeHref()+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>'+'<span>'+T("home")+'</span></a></div></header><main class="w" style="padding-top:24px;max-width:56rem"><a class="back" href="'+siteHomeHref()+'">'+CHL.replace("m15 18-6-6 6-6","m9 18 6-6-6-6")+'<span>'+T("back")+'</span></a><section class="dh">'+icon(a,"xl")+'<div style="flex:1">'+ed(p+".name","h1")+ed(p+".sub","p")+'<div style="margin-top:12px">'+stores(a)+'</div></div>'+eb("a",j,"✎ تحرير التطبيق")+cam(p+".img","📷 صورة الأيقونة")+(ADMIN?'<button class="eb in" style="background:#555" data-act="tg" data-p="hd" data-i="'+j+'">'+(a.hd?"👁 إظهار التطبيق للزوار":"🙈 إخفاء عن الزوار")+'</button><button class="eb in" style="background:#c0392b" data-act="del" data-p="a" data-i="'+j+'">🗑 حذف هذا التطبيق</button>':'')+'</section>'+navHtml(a,on)+''+body+'</main></div>'}
 function navOf(a){var j=D.a.indexOf(a),hid=a.h1&&a.h2&&!(a.tabs&&a.tabs.length),t=[];
  if(!a.h1||hid)t.push(["o",appHref(a),"t.t1"]);if(!a.h2||hid)t.push(["m",appHref(a,"m"),"t.t2"]);
  (a.tabs||[]).forEach(function(x,k){t.push([k,appHref(a,k),"a."+j+".tabs."+k+".n"])});return t}
@@ -533,7 +533,10 @@ function route(keep){
   renderList();
  };
  renderList();
- if(keep)scrollTo(0,y);else if(h==="apps"&&$("apps"))setTimeout(function(){$("apps").scrollIntoView()},0)}
+ if(keep)scrollTo(0,y);
+ else if(h==="apps"&&$("apps"))setTimeout(function(){$("apps").scrollIntoView()},0);
+ else scrollTo({top:0,left:0,behavior:"instant"});
+}
 /* ---------- admin ---------- */
 var TK=[["today","عنوان الصفحة الرئيسية"],["week","عنوان قسم تطبيقات الأسبوع"],["feat","عنوان قائمة التطبيقات"],["all","تبويب «الكل»"],["search","نص حقل البحث"],["ad","النص الصغير في اللافتات"],["go","زر اللافتات"],["none","رسالة عدم وجود نتائج"],["home","زر الرئيسية"],["back","رابط الرجوع"],["t1","تبويب نظرة عامة"],["t2","تبويب المزيد"],["rate","عنوان التقييم"],["cat","عنوان الفئة"],["age","عنوان العمر"],["shots","عنوان لقطات الشاشة"],["about","عنوان عن التطبيق"],["like","عنوان قد يعجبك أيضًا"],["info","عنوان المعلومات"],["ratings","عنوان التقييمات"],["news","عنوان ما الجديد"],["faq","عنوان الأسئلة الشائعة"],["priv","عنوان الخصوصية"],["dev","المطوّر"],["ver","الإصدار"],["size","الحجم"],["upd","آخر تحديث"],["langs","اللغات"],["compat","التوافق"],["price","السعر"],["admin","زر دخول المدير"]];
 var ST=[["k","النوع","select",[["apple","App Store"],["play","Google Play"],["web","رابط آخر"]]],["n","اسم الزر (للرابط الآخر)"],["u","الرابط"]],TB=[["n","اسم التبويب"],["img","صورة أعلى التبويب","img"]],CF=[["n","اسم الفئة"],["h","إخفاء من التبويبات","check"]];
@@ -724,45 +727,105 @@ $("adm").addEventListener("change",event=>{
   dirty();
  }
 });
-let seoSources={pages:null,loading:false,error:false};
+function newSeoSources(){return {pages:null,loading:false,error:false,key:"home",drafts:new Map(),saving:false}}
+let seoSources=newSeoSources();
 function seoDocuments(pages){
- const documents=[];
- const add=(title,fields)=>documents.push({title,fields});
- add(D.s.name||"الرئيسية",[[D.s.name,5],[D.t.today,1],[D.t.week,1],[D.t.feat,1]]);
- if(D.s.sb!==false)D.b.forEach(b=>add(b.t||"لافتة",[[b.t,3],[b.s,1]]));
+ const homeFields=[[D.s.name,5],[D.t.today,1],[D.t.week,1],[D.t.feat,1]];
+ const visible=D.a.filter(app=>!app.hd);
+ if(D.s.sb!==false)D.b.forEach(b=>homeFields.push([b.t,3],[b.s,1]));
  if(D.s.sl!==false){
-  if(D.s.customHomeTabs)(D.homeTabs||[]).forEach(tab=>add(tab.name,[[tab.name,2]]));
-  else if(D.s.sf!==false)D.c.filter(category=>!category.h).forEach(category=>add(category.n,[[category.n,2]]));
+  visible.forEach(app=>homeFields.push([app.name,2],[app.sub,1]));
+  if(D.s.customHomeTabs)(D.homeTabs||[]).forEach(tab=>homeFields.push([tab.name,2]));
+  else if(D.s.sf!==false)D.c.filter(category=>!category.h).forEach(category=>homeFields.push([category.n,2]));
  }
- D.a.filter(app=>!app.hd).forEach(app=>{
+ const documents=[{key:"home",title:D.s.name||"الرئيسية",label:"الرئيسية",fields:homeFields,item:D.s}];
+ visible.forEach(app=>{
   const fields=[[app.name,5],[app.sub,4],[app.cat,2]];
   for(const [field,hidden] of [["desc","x3"],["feat","x3"],["news","x7"],["faq","x8"],["privacy","x9"]]){
-   if(app[hidden]||(app.h2&&["news","faq","privacy"].includes(field)))continue;
+   if(app[hidden]||((field==="desc"||field==="feat")?app.h1:app.h2))continue;
    const rich=app[field+"Rich"];
    fields.push([typeof rich==="string"?sitePageContent.render(rich,true):app[field],field==="privacy"?1:2]);
   }
-  (app.tabs||[]).forEach(tab=>{
-   fields.push([tab.n,2],[tab.h?tab.h.replace(/<[^>]*>/g," "):tab.b,1]);
-  });
-  add(app.name,fields);
+  (app.tabs||[]).forEach(tab=>fields.push([tab.n,2],[tab.h?tab.h.replace(/<[^>]*>/g," "):tab.b,1]));
+  documents.push({key:"app:"+app.slug,title:app.name,label:"تطبيق · "+app.name,fields,item:app});
  });
- pages.forEach(page=>add(page.title,[[page.title,5],[page.seo_title,3],[page.description,3],[sitePageContent.render(page.body,true),1]]));
+ pages.forEach(page=>documents.push({key:page.kind+":"+page.slug,title:page.title,
+  label:(page.kind==="post"?"مقال · ":"صفحة · ")+page.title,page,
+  fields:[[page.title,5],[sitePageContent.render(page.body,true),2]]}));
  return documents;
 }
+function seoDraft(document){
+ const saved=D.s.seoPreferences?.[document.key]||{};
+ if(!seoSources.drafts.has(document.key))seoSources.drafts.set(document.key,{
+  target:document.item?.seoTarget??saved.target??"",terms:{...saved.terms}
+ });
+ return seoSources.drafts.get(document.key);
+}
+function seoRows(document,draft){
+ const suggestions=siteSeo.collectSeoPhrases([document]).filter(item=>
+  !(siteSeo.includesSeoPhrase(item.label,draft.target)&&siteSeo.includesSeoPhrase(draft.target,item.label)));
+ const previous=Object.entries(draft.terms).filter(([key])=>!suggestions.some(item=>item.key===key))
+  .map(([key,term])=>({key,label:term.text,count:0}));
+ return [...suggestions,...previous].slice(0,15).map(item=>({...item,...draft.terms[item.key]}));
+}
 function seoAssistantPanel(){
- const pages=seoSources.pages||[];
- const phrases=siteSeo.collectSeoPhrases(seoDocuments(pages));
- const status=seoSources.loading?"جارٍ جمع عبارات الصفحات والمدونة…":seoSources.error?
-  "تعذّر جلب كل الصفحات والمقالات. العبارات المتاحة من بيانات الموقع الحالية.":"";
- const rows=phrases.map(item=>{
-  const sources=[...new Set(item.sources.values())];
-  return '<li><b>'+E(item.label)+'</b><small>'+E(sources.slice(0,4).join("، "))+
-   (sources.length>4?' وغير ذلك':'')+'</small></li>';
- }).join("");
- return '<section class="seo-assistant"><button type="button" data-refresh-seo'+(seoSources.loading?' disabled':'')+'>تحديث العبارات</button>'+
-  '<p class="hint">هذه اقتراحات من محتوى الموقع. لتحديد ما يستهدفه عنوان البحث، افتح «سيو التطبيق» أو «سيو الرئيسية» واكتب عبارتك.</p>'+ 
+ const documents=seoDocuments(seoSources.pages||[]);
+ const document=documents.find(item=>item.key===seoSources.key)||documents[0];
+ const draft=seoDraft(document);
+ const status=seoSources.loading?"جارٍ تحميل الصفحات والمقالات…":seoSources.error?
+  "تعذّر تحميل كل الصفحات والمقالات. تظل التطبيقات والرئيسية متاحة.":"";
+ const found=document.fields.some(([text])=>siteSeo.includesSeoPhrase(String(text||""),draft.target));
+ const rows=seoRows(document,draft).map((item,index)=>
+  '<li><div data-seo-row data-key="'+E(item.key)+'"><label>عبارة '+(index+1)+'<input data-seo-term maxlength="100" value="'+E(item.text??item.label)+'"></label>'+
+  '<label class="ck"><input type="checkbox" data-seo-exclude'+(item.excluded?' checked':'')+'> استبعاد</label>'+
+  '<small>مرات الورود لعبارة الاقتراح: '+item.count+'</small></div></li>').join("");
+ const options=documents.map(item=>'<option value="'+E(item.key)+'"'+(item===document?' selected':'')+'>'+E(item.label)+'</option>').join("");
+ return '<form id="seo-assistant" class="seo-assistant"><label>اختر صفحة<select data-seo-page>'+options+'</select></label>'+
   (status?'<p role="status">'+status+'</p>':'')+
-  (rows?'<ol>'+rows+'</ol>':'<p>ما فيه محتوى كافٍ لاستخراج عبارات.</p>')+'</section>';
+  '<label>عبارة البحث المستهدفة<input data-seo-target maxlength="100" value="'+E(draft.target)+'"></label>'+
+  '<p class="hint">'+(draft.target?(found?'عبارتك المستهدفة موجودة في محتوى الصفحة.':'العبارة معتمدة عند الحفظ، لكنها غير موجودة حرفيًا في محتوى الصفحة.'):'عيّن عبارة أساسية للصفحة.')+'</p>'+
+  '<details open><summary>العبارات المساندة</summary>'+(rows?'<ol>'+rows+'</ol>':'<p>ما فيه محتوى كافٍ لاستخراج عبارات.</p>')+'</details>'+
+  '<button type="submit"'+(seoSources.saving?' disabled':'')+'>حفظ إعدادات السيو لهذه الصفحة</button> '+
+  '<button type="button" data-refresh-seo'+(seoSources.loading?' disabled':'')+'>إعادة التحليل</button></form>';
+}
+let savingSite=false;
+async function saveSeoAssistant(form){
+ if(!ADMIN||!SECRET||savingSite)return;
+ const state=seoSources;
+ const key=form.querySelector("[data-seo-page]").value;
+ const document=seoDocuments(state.pages||[]).find(item=>item.key===key);
+ if(!document)return;
+ const draft=seoDraft(document);
+ const target=form.querySelector("[data-seo-target]").value.trim();
+ const rows=[...form.querySelectorAll("[data-seo-row]")];
+ const terms=Object.assign({},draft.terms,...rows.map(row=>({
+  [row.dataset.key]:{text:row.querySelector("[data-seo-term]").value.trim(),excluded:row.querySelector("[data-seo-exclude]").checked}
+ })));
+ const supporting=[...new Set(rows.map(row=>terms[row.dataset.key]).filter(term=>term.text&&!term.excluded).map(term=>term.text))];
+ const payload=JSON.parse(ORIG);
+ const update=data=>{
+  const item=key==="home"?data.s:key.startsWith("app:")?data.a.find(app=>app.slug===key.slice(4)):null;
+  if(key.startsWith("app:")&&!item)return false;
+  if(item)item.seoTarget=target;
+  data.s.seoPreferences={...(data.s.seoPreferences||{}),[key]:{target,terms,supporting}};
+  return true;
+ };
+ if(!update(payload)){toast("احفظ التطبيق الجديد أولًا، ثم احفظ إعدادات السيو");return}
+ savingSite=state.saving=true;
+ form.querySelectorAll("input,select,button").forEach(control=>control.disabled=true);
+ try{
+  const result=await api("admin_save",{p_secret:SECRET,p_data:payload});
+  if(result!=="ok")throw new Error(MSG[result]||"تعذّر حفظ إعدادات السيو");
+  if(state!==seoSources)return;
+  update(D);
+  ORIG=JSON.stringify(payload);
+  state.drafts.delete(key);
+  toast("تم حفظ إعدادات السيو لهذه الصفحة");
+ }catch(e){if(state===seoSources)toast(e.message)}
+ finally{
+  savingSite=state.saving=false;
+  if(state===seoSources&&PT==="seo")pnl();
+ }
 }
 async function refreshSeoAssistant(){
  const state=seoSources;
@@ -774,7 +837,7 @@ async function refreshSeoAssistant(){
  try{
   const size=50;
   for(let offset=0;;offset+=size){
-   const batch=await rest("site_pages_published?select=slug,title,body,description,seo_title&order=slug.asc&limit="+size+"&offset="+offset);
+   const batch=await rest("site_pages_published?select=slug,kind,title,body,description,seo_title&order=slug.asc&limit="+size+"&offset="+offset);
    if(state!==seoSources)return;
    pages.push(...batch);
    if(batch.length<size)break;
@@ -783,11 +846,31 @@ async function refreshSeoAssistant(){
  finally{
   state.loading=false;
   if(pages.length||!state.error)state.pages=pages;
-  if(state===seoSources&&PT==="seo")pnl();
+  if(state===seoSources&&PT==="seo"&&!state.saving)pnl();
  }
 }
 $("adm").addEventListener("click",event=>{
  if(ADMIN&&event.target.closest("[data-refresh-seo]"))refreshSeoAssistant();
+});
+$("adm").addEventListener("input",event=>{
+ const form=event.target.closest("#seo-assistant");
+ if(!form)return;
+ const key=form.querySelector("[data-seo-page]").value;
+ const draft=seoSources.drafts.get(key);
+ if(!draft)return;
+ if(event.target.matches("[data-seo-target]"))draft.target=event.target.value;
+ const row=event.target.closest("[data-seo-row]");
+ if(row)draft.terms[row.dataset.key]={text:row.querySelector("[data-seo-term]").value,excluded:row.querySelector("[data-seo-exclude]").checked};
+});
+$("adm").addEventListener("change",event=>{
+ if(!event.target.matches("[data-seo-page]"))return;
+ seoSources.key=event.target.value;
+ pnl();
+});
+$("adm").addEventListener("submit",event=>{
+ if(event.target.id!=="seo-assistant")return;
+ event.preventDefault();
+ saveSeoAssistant(event.target);
 });
 function pn(){
  if(PT==="seo")return seoAssistantPanel();
@@ -804,10 +887,10 @@ function adm(){document.body.classList.toggle("adm",ADMIN&&!MIN);var a=$("adm");
  a.innerHTML='<div class="pn" id="pn" hidden></div><div class="adb"><b>وضع المدير</b>'+[["s","الإعدادات"],["b","اللافتات"],["a","التطبيقات"],["c","الفئات"],["homeTabs","تبويبات الرئيسية"],["t","النصوص"],["pages","الصفحات والسيو"],["seo","مساعد السيو"]].map(function(x){return '<button data-act="tab" data-p="'+x[0]+'" aria-pressed="'+(PT==x[0])+'">'+x[1]+'</button>'}).join("")+'<button class="sv" data-act="save">حفظ ونشر</button><button data-act="undo">تراجع</button><button data-act="min">⌄ تصغير</button><button data-act="exit">خروج</button></div>';pnl()}
 function toast(m){var t=$("ts");t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(function(){t.hidden=true},4000)}
 function dirty(){clearTimeout(dirty.t);dirty.t=setTimeout(function(){var f=document.activeElement;if(f&&f.dataset&&(f.dataset.e!=null||f.dataset.r!=null||f.closest(".inline-app-editor[open]"))){dirty();return}theme();route(true)},350)}
-async function save(){try{if(!SECRET){toast("سجّل الدخول أولًا");return}const incomplete=D.a.find(app=>app.showCustomDownload&&(!app.customDownloadLabel?.trim()||!customDownloadUrl(app.customDownloadUrl)));
+async function save(){if(savingSite)return;try{if(!SECRET){toast("سجّل الدخول أولًا");return}const incomplete=D.a.find(app=>app.showCustomDownload&&(!app.customDownloadLabel?.trim()||!customDownloadUrl(app.customDownloadUrl)));
  if(incomplete){toast("أكمل نص الزر المخصص ورابطه في تطبيق «"+incomplete.name+"» أو أوقف إظهاره");return}
- toast("جارٍ الحفظ…");var r=await api("admin_save",{p_secret:SECRET,p_data:D});
- if(r==="ok"){ORIG=JSON.stringify(D);toast("تم الحفظ والنشر ✓ يراه الزوار الآن");gc()}else toast(MSG[r]||("تعذّر الحفظ: "+r))}catch(e){toast("تعذّر الحفظ، تحقق من الاتصال ("+(e&&e.message||e)+")")}}
+ savingSite=true;toast("جارٍ الحفظ…");var r=await api("admin_save",{p_secret:SECRET,p_data:D});
+ if(r==="ok"){ORIG=JSON.stringify(D);toast("تم الحفظ والنشر ✓ يراه الزوار الآن");gc()}else toast(MSG[r]||("تعذّر الحفظ: "+r))}catch(e){toast("تعذّر الحفظ، تحقق من الاتصال ("+(e&&e.message||e)+")")}finally{savingSite=false}}
 function gc(){try{var s=JSON.stringify(D);Object.keys(IMG).forEach(function(id){if(s.indexOf("img:"+id)<0){api("admin_del_image",{p_secret:SECRET,p_id:id}).catch(function(){});delete IMG[id]}})}catch(e){}}
 function prof(p){if(p=="s.logo")return[400,"png"];if(/^a\.\d+\.img$/.test(p))return[256,"png"];if(/^b\./.test(p))return[1400,"jpeg"];if(/\.shots$/.test(p))return[900,"jpeg"];return[1000,"jpeg"]}
 function shrink(f,mx,fmt){return new Promise(function(res,rej){var u=URL.createObjectURL(f),im=new Image();im.onload=function(){URL.revokeObjectURL(u);var q=.85,s=Math.min(1,mx/Math.max(im.width,im.height));
@@ -818,7 +901,7 @@ async function upl(files,p,multi){try{if(!SECRET){toast("سجّل الدخول �
   if(r!=="ok"){toast(MSG[r]||("تعذّر الرفع: "+r));return}IMG[id]=d;if(multi)get(p).push("img:"+id);else set(p,"img:"+id)}
  toast("تم رفع الصورة. اضغط حفظ ونشر لتظهر للزوار");pnl();dirty()}catch(e){toast("تعذّر الرفع: "+(e&&e.message||e))}}
 document.addEventListener("click",function(e){if(ADMIN&&e.target.closest("[data-e]")){e.preventDefault();return}var b=e.target.closest("[data-act]");if(!b)return;var a=b.dataset.act,p=b.dataset.p,i=+b.dataset.i;
- if(a=="exit"){seoSources={pages:null,loading:false,error:false};pageEditor={pages:[],slug:"",kind:"",loaded:false,busy:false};SECRET="";ss("hs","");ADMIN=false;MIN=false;PT="";adm();route(true);return}
+ if(a=="exit"){seoSources=newSeoSources();pageEditor={pages:[],slug:"",kind:"",loaded:false,busy:false};SECRET="";ss("hs","");ADMIN=false;MIN=false;PT="";adm();route(true);return}
  if(a=="min"){MIN=true;adm();return}if(a=="max"){MIN=false;adm();return}
  if(a=="tab"){PT=PT==p?"":p;adm();if(PT==="pages"&&!pageEditor.loaded)loadPageEditor();if(PT==="seo")refreshSeoAssistant();return}
  if(a=="save")return save();
